@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Eco Digital — Apresentação do Protótipo</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/theme/black.min.css"/>
+<style>
+:root{
+  --bg:#0b0e1a;--ink:#ecedf6;--ink-soft:#a7adc8;--good:#67e8c5;--good2:#9af2d3;
+  --toxic:#c93b8a;--accent:#f0a05a;--accent2:#fbd49a;--danger:#ff5d6c;--gold:#f6c64a;
+}
+.reveal-viewport{background:radial-gradient(120% 80% at 50% 0%,#161a32 0%,#0a0d1a 60%,#06081288 100%),var(--bg)!important}
+.reveal{color:var(--ink)!important;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif!important}
+.reveal h1,.reveal h2,.reveal h3,.reveal h4{color:var(--ink)!important;text-transform:none!important;letter-spacing:-.01em!important;font-weight:700!important}
+.reveal h1{font-size:2.6em!important}
+.reveal h2{font-size:1.7em!important}
+.reveal h3{font-size:1.2em!important}
+.reveal p,.reveal li{color:var(--ink-soft)!important;font-size:.82em!important;line-height:1.65!important}
+.reveal strong{color:var(--ink)!important}
+.reveal a{color:var(--good)!important}
+.reveal code{font-family:"JetBrains Mono",ui-monospace,monospace!important;background:rgba(255,255,255,.06)!important;padding:2px 8px!important;border-radius:4px!important;font-size:.75em!important;color:var(--good2)!important}
+
+.slide-tag{display:inline-block;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.55em;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:10px;padding:3px 10px;border:1px solid rgba(240,160,90,.3);border-radius:4px}
+.slide-tag.good{color:var(--good);border-color:rgba(103,232,197,.3)}
+.slide-tag.toxic{color:var(--toxic);border-color:rgba(201,59,138,.3)}
+
+.cols{display:grid!important;gap:28px!important;align-items:start!important}
+.cols-2{grid-template-columns:1fr 1fr!important}
+.cols-3{grid-template-columns:1fr 1fr 1fr!important}
+.cols-4{grid-template-columns:1fr 1fr 1fr 1fr!important}
+.cols > *{text-align:left!important}
+
+.card{background:rgba(14,18,40,.7)!important;border:1px solid #1f2444!important;border-radius:12px!important;padding:18px!important;margin-bottom:12px!important}
+.card h4{margin:0 0 6px!important;font-size:.9em!important;color:var(--good2)!important}
+.card p,.card li{font-size:.72em!important;margin:4px 0!important}
+
+.highlight-good{color:var(--good)!important;font-weight:600!important}
+.highlight-accent{color:var(--accent)!important;font-weight:600!important}
+.highlight-toxic{color:var(--toxic)!important;font-weight:600!important}
+.highlight-danger{color:var(--danger)!important;font-weight:600!important}
+.highlight-gold{color:var(--gold)!important;font-weight:600!important}
+
+.stat{font-size:2.4em!important;font-weight:800!important;color:var(--accent)!important;line-height:1!important}
+.stat-label{font-size:.6em!important;color:var(--ink-soft)!important;display:block!important;margin-top:4px!important}
+
+.mech-row{display:flex!important;gap:14px!important;align-items:flex-start!important;margin-bottom:10px!important;text-align:left!important}
+.mech-num{flex:none!important;width:32px!important;height:32px!important;border-radius:50%!important;background:var(--good)!important;color:#0a1a15!important;display:grid!important;place-items:center!important;font-weight:700!important;font-size:.8em!important}
+.mech-body h4{margin:0!important;font-size:.85em!important;color:var(--ink)!important}
+.mech-body p{margin:2px 0 0!important;font-size:.7em!important}
+
+.timeline{display:flex!important;gap:6px!important;align-items:center!important;justify-content:center!important;flex-wrap:wrap!important}
+.timeline .step{background:rgba(14,18,40,.7)!important;border:1px solid #1f2444!important;border-radius:8px!important;padding:8px 12px!important;font-size:.65em!important;text-align:center!important;min-width:100px!important}
+.timeline .step .num{display:block!important;font-weight:700!important;font-size:1.3em!important;color:var(--good)!important}
+.timeline .arrow{color:var(--ink-soft)!important;font-size:1.2em!important}
+
+.table-wrap{width:100%!important;overflow:visible!important}
+.table-wrap table{width:100%!important;border-collapse:collapse!important;font-size:.62em!important}
+.table-wrap th{background:rgba(103,232,197,.1)!important;color:var(--good2)!important;padding:8px 10px!important;text-align:left!important;border-bottom:1px solid #1f2444!important;font-weight:600!important}
+.table-wrap td{padding:6px 10px!important;border-bottom:1px solid rgba(31,36,68,.5)!important;color:var(--ink-soft)!important;vertical-align:top!important}
+.table-wrap tr:hover td{background:rgba(103,232,197,.04)!important}
+
+.screen-grid{display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:14px!important}
+.screen-card{background:rgba(14,18,40,.7)!important;border:1px solid #1f2444!important;border-radius:10px!important;padding:14px!important;text-align:center!important}
+.screen-card .icon{font-size:1.8em!important;margin-bottom:6px!important}
+.screen-card h4{font-size:.75em!important;color:var(--good2)!important;margin:0 0 4px!important}
+.screen-card p{font-size:.6em!important;margin:0!important}
+
+.team-list{list-style:none!important;padding:0!important;margin:0!important;display:flex!important;flex-wrap:wrap!important;gap:8px!important;justify-content:center!important}
+.team-list li{background:rgba(14,18,40,.7)!important;border:1px solid #1f2444!important;border-radius:8px!important;padding:6px 14px!important;font-size:.7em!important;color:var(--ink)!important}
+
+.flow-diagram{display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;flex-wrap:wrap!important}
+.flow-diagram .box{background:rgba(14,18,40,.7)!important;border:1px solid #1f2444!important;border-radius:10px!important;padding:10px 16px!important;font-size:.65em!important;text-align:center!important}
+.flow-diagram .box.accent{border-color:var(--accent)!important;color:var(--accent2)!important}
+.flow-diagram .box.good{border-color:var(--good)!important;color:var(--good2)!important}
+.flow-diagram .arr{color:var(--ink-soft)!important;font-size:1.2em!important}
+
+.reveal .controls{color:var(--good)!important}
+.reveal .progress span{background:var(--good)!important}
+.reveal .slide-number{color:var(--ink-soft)!important;font-size:.5em!important}
+
+@media(max-width:800px){
+  .cols-2,.cols-3,.cols-4{grid-template-columns:1fr!important}
+  .screen-grid{grid-template-columns:1fr 1fr!important}
+}
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ==================== SLIDE 1: CAPA ==================== -->
+<section>
+  <div class="slide-tag">Engenharia de Software Educativo · 2026.1</div>
+  <h1>Eco Digital<br><span style="background:linear-gradient(90deg,#9af2d3,#67e8c5 40%,#f0a05a);-webkit-background-clip:text;background-clip:text;color:transparent">O Labirinto da Reputação</span></h1>
+  <p>Protótipo de jogo educativo sobre cyberbullying para adolescentes de 12 a 17 anos</p>
+  <p style="margin-top:28px">
+    <ul class="team-list">
+      <li>Arthur Lopes</li>
+      <li>Marcos Pierre</li>
+      <li>João Lucas</li>
+      <li>Jeová Bezerra</li>
+    </ul>
+  </p>
+  <p style="margin-top:18px;font-size:.55em;color:var(--ink-soft)">05 de junho de 2026</p>
+</section>
+
+<!-- ==================== SLIDE 2: O PROBLEMA ==================== -->
+<section>
+  <div class="slide-tag toxic">O Problema</div>
+  <h2>Cyberbullying no Brasil</h2>
+  <div class="cols cols-2">
+    <div>
+      <div class="card" style="text-align:center">
+        <span class="stat">37%</span>
+        <span class="stat-label">dos adolescentes brasileiros já sofreram cyberbullying</span>
+        <p style="margin-top:8px;font-size:.6em">Fonte: UNICEF</p>
+      </div>
+      <div class="card" style="text-align:center">
+        <span class="stat">1 em 5</span>
+        <span class="stat-label">crianças já passou por violência digital</span>
+        <p style="margin-top:8px;font-size:.6em">Fonte: TIC Kids Online Brasil</p>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h4>Impactos</h4>
+        <ul>
+          <li>Ansiedade e depressão</li>
+          <li>Queda de autoestima</li>
+          <li>Abandono escolar</li>
+          <li>Risco de automutilação</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>Agravante digital</h4>
+        <p>Atinge a vítima <strong>24h por dia</strong>, se espalha rápido e o agressor pode agir sob anonimato.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 3: O QUE É O ECO DIGITAL ==================== -->
+<section>
+  <div class="slide-tag good">Visão Geral</div>
+  <h2>O que é o Eco Digital?</h2>
+  <p>Jogo educativo de <strong>plataforma 2D + puzzle</strong>, single-player, baseado em navegador. Zero dependências externas — basta abrir o HTML.</p>
+  <div class="cols cols-3" style="margin-top:20px">
+    <div class="card" style="text-align:center">
+      <div style="font-size:1.6em;margin-bottom:6px">🌍</div>
+      <h4>3 Mundos</h4>
+      <p>Feed (rede social)<br>Chat (mensageiro)<br>Fórum anônimo</p>
+    </div>
+    <div class="card" style="text-align:center">
+      <div style="font-size:1.6em;margin-bottom:6px">🎮</div>
+      <h4>12 Fases</h4>
+      <p>3 regulares + 1 chefão<br>por mundo</p>
+    </div>
+    <div class="card" style="text-align:center">
+      <div style="font-size:1.6em;margin-bottom:6px">🧩</div>
+      <h4>6 Tipos de Puzzle</h4>
+      <p>Rede de apoio, frase, lei,<br>ordem, empatia, reconstrução</p>
+    </div>
+  </div>
+  <div style="margin-top:18px">
+    <div class="flow-diagram">
+      <div class="box accent">Reconhecer</div>
+      <span class="arr">→</span>
+      <div class="box accent">Documentar</div>
+      <span class="arr">→</span>
+      <div class="box accent">Agir</div>
+      <span class="arr">→</span>
+      <div class="box accent">Denunciar</div>
+      <span class="arr">→</span>
+      <div class="box good">Restaurar</div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 4: CÍRCULO MÁGICO ==================== -->
+<section>
+  <div class="slide-tag">Fundamentação Teórica</div>
+  <h2>Círculo Mágico</h2>
+  <p>Conceito de <strong>Johan Huizinga</strong> (1938) — espaço temporário onde as regras do mundo real são suspensas e as regras do jogo prevalecem.</p>
+  <div class="cols cols-2" style="margin-top:16px">
+    <div>
+      <div class="card">
+        <h4 style="color:var(--accent2)!important">Mundo Real</h4>
+        <div class="table-wrap">
+          <table>
+            <tr><td>Cyberbullying</td><td>Medo, vergonha, isolamento</td></tr>
+            <tr><td>Consequência</td><td>Dano emocional permanente</td></tr>
+            <tr><td>Papel</td><td>Vítima passiva ou espectador</td></tr>
+            <tr><td>Saída</td><td>Não há saída fácil</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="border-color:var(--good)!important">
+        <h4>Mundo do Jogo (Círculo Mágico)</h4>
+        <div class="table-wrap">
+          <table>
+            <tr><td>Conflito</td><td>Nuvens de Toxicidade (desafios superáveis)</td></tr>
+            <tr><td>Consequência</td><td>Dano à Resiliência (recuperável, retry)</td></tr>
+            <tr><td>Papel</td><td>Agente ativo que denuncia e resolve</td></tr>
+            <tr><td>Saída</td><td>Completar = restaurar o ambiente</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p style="margin-top:12px;font-size:.7em">O adolescente <strong>experimenta o cyberbullying de forma segura</strong> — sente a pressão, mas dentro de limites controláveis. A empatia com a situação é real; o risco é simulado.</p>
+</section>
+
+<!-- ==================== SLIDE 5: MECÂNICAS ==================== -->
+<section>
+  <div class="slide-tag">Fundamentação Teórica</div>
+  <h2>Mecânicas do Jogo</h2>
+  <p>Regras e sistemas com os quais o jogador interage diretamente (Hunicke, LeBlanc & Zubek, 2004).</p>
+  <div style="margin-top:12px">
+    <div class="mech-row"><div class="mech-num">1</div><div class="mech-body"><h4>Resiliência Emocional</h4><p>Barra de vida. Cyberbullying consome saúde mental; proteger-se é estratégia.</p></div></div>
+    <div class="mech-row"><div class="mech-num">2</div><div class="mech-body"><h4>Nuvens → Plataformas Solidárias</h4><p>Resolver puzzle transforma toxidade em espaço seguro. Ignorar não funciona.</p></div></div>
+    <div class="mech-row"><div class="mech-num">3</div><div class="mech-body"><h4>Puzzles de Reparação</h4><p>6 tipos: rede de apoio, frase, lei, ordem da denúncia, empatia, reconstrução.</p></div></div>
+    <div class="mech-row"><div class="mech-num">4</div><div class="mech-body"><h4>Prints de Segurança</h4><p>Colecionáveis que desbloqueiam conteúdo educativo real (leis, canais, dados).</p></div></div>
+    <div class="mech-row"><div class="mech-num">5</div><div class="mech-body"><h4>Progressão Linear</h4><p>Reconhecer → agir → denunciar. Não se pula etapas.</p></div></div>
+    <div class="mech-row"><div class="mech-num">6</div><div class="mech-body"><h4>Medalhas e Rejogabilidade</h4><p>Bronze (completou), Prata (protegeu resiliência), Ouro (coletou tudo).</p></div></div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 6: JOGABILIDADE EDUCACIONAL ==================== -->
+<section>
+  <div class="slide-tag">Fundamentação Teórica</div>
+  <h2>Jogabilidade Educacional</h2>
+  <p>O conteúdo <strong>não é separado</strong> da jogabilidade — o jogador aprende <strong>jogando</strong>, não lendo (Prensky, 2001; Gee, 2003).</p>
+  <div class="table-wrap" style="margin-top:14px">
+    <table>
+      <thead>
+        <tr><th>Mecânica</th><th>O que o jogador FAZ</th><th>O que o jogador APRENDE</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Resiliência</td><td>Gerencia recurso, evita dano</td><td>Cyberbullying consome saúde mental</td></tr>
+        <tr><td>Nuvens → Solidárias</td><td>Resolve puzzle para transformar</td><td>Enfrentar com conhecimento resolve a situação</td></tr>
+        <tr><td>Puzzle A — Rede de Apoio</td><td>Ordena a cadeia de apoio</td><td>Existe uma sequência de proteção</td></tr>
+        <tr><td>Puzzle B — Frase</td><td>Classifica ataque vs. fato</td><td>Crítica ≠ ataque. Separar é o primeiro passo</td></tr>
+        <tr><td>Puzzle C — Lei</td><td>Escolhe a lei aplicável</td><td>Há leis brasileiras que protegem</td></tr>
+        <tr><td>Puzzle D — Denúncia</td><td>Ordena os passos</td><td>Existe protocolo: print → bloquear → denunciar → adulto → canal</td></tr>
+        <tr><td>Puzzle E — Empatia</td><td>Escolhe resposta empática</td><td>Escutar e validar > dar conselho</td></tr>
+        <tr><td>Puzzle F — Reconstruir</td><td>Monta mensagem de apoio</td><td>Palavras certas constroem; erradas destroem</td></tr>
+        <tr><td>Prints</td><td>Coleta provas pelo nível</td><td>Print é prova documental — primeiro passo</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 7: TELAS DO PROTÓTIPO ==================== -->
+<section>
+  <div class="slide-tag good">Protótipo</div>
+  <h2>Telas do Jogo</h2>
+  <div class="screen-grid">
+    <div class="screen-card">
+      <div class="icon">🏠</div>
+      <h4>Tela Inicial</h4>
+      <p>Título, descrição e botões Jogar, Como Jogar, Sobre o Cyberbullying</p>
+    </div>
+    <div class="screen-card">
+      <div class="icon">🗺️</div>
+      <h4>Mapa-Múndi</h4>
+      <p>3 mundos com 4 fases cada. Navegação por nós com progressão visual</p>
+    </div>
+    <div class="screen-card">
+      <div class="icon">⚔️</div>
+      <h4>Gameplay</h4>
+      <p>Canvas 2D: plataforma, pulo, inimigos, nuvens, power-ups, prints</p>
+    </div>
+    <div class="screen-card">
+      <div class="icon">🧩</div>
+      <h4>Painel de Reparação</h4>
+      <p>6 tipos de puzzle educativo (rede de apoio, frase, lei, ordem, empatia, reconstrução)</p>
+    </div>
+    <div class="screen-card">
+      <div class="icon">🏆</div>
+      <h4>Resultado</h4>
+      <p>Medalhas (bronze/prata/ouro), checklist de objetivos e rejogabilidade</p>
+    </div>
+    <div class="screen-card">
+      <div class="icon">📁</div>
+      <h4>Acervo de Provas</h4>
+      <p>20 cards educativos desbloqueáveis: leis, dados, canais, depoimentos</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 8: HUD ==================== -->
+<section>
+  <div class="slide-tag good">Protótipo</div>
+  <h2>Interface durante o jogo (HUD)</h2>
+  <div class="cols cols-2" style="margin-top:14px">
+    <div>
+      <div class="card">
+        <h4>Barra de Resiliência</h4>
+        <p>Representa a saúde mental do adolescente. Dano de inimigos, toxidade e erros reduzem. Zerar = esgotamento (restart).</p>
+        <div style="margin-top:8px;height:10px;background:#1a1f3a;border-radius:999px;overflow:hidden">
+          <div style="width:65%;height:100%;background:linear-gradient(90deg,#67e8c5,#9af2d3);border-radius:999px"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Mini-mapa</h4>
+        <p>Posição do jogador, nuvens (ativas/resolvidas) e meta. Ajuda orientação espacial.</p>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h4>Prints da fase</h4>
+        <p>Contador de provas coletadas. Cada print desbloqueia conteúdo real no Acervo.</p>
+      </div>
+      <div class="card">
+        <h4>Timer (níveis especiais)</h4>
+        <p>Countdown em fases de viralização. Simula urgência — fofocas se espalham rápido.</p>
+      </div>
+      <div class="card">
+        <h4>Power-ups ativos</h4>
+        <p>Escudo de Empatia, Bloqueio Temporário, Aliado Temporário — com timer.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 9: CONTEÚDO EDUCATIVO ==================== -->
+<section>
+  <div class="slide-tag good">Conteúdo Integrado</div>
+  <h2>O que o jogo ensina</h2>
+  <div class="cols cols-2" style="margin-top:14px">
+    <div>
+      <div class="card">
+        <h4>Legislação Brasileira</h4>
+        <ul>
+          <li><strong>ECA</strong> — proteção integral, inclusive online</li>
+          <li><strong>Lei 13.185/2015</strong> — bullying e cyberbullying</li>
+          <li><strong>Lei 14.811/2024</strong> — crime hediondo contra menores</li>
+          <li><strong>Lei Carolina Dieckmann</strong> — vazamento de conteúdo</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>Habilidades Socioemocionais</h4>
+        <ul>
+          <li>Separar crítica de ataque</li>
+          <li>Praticar empatia ativa</li>
+          <li>Pedir ajuda como estratégia</li>
+          <li>Não responder com ódio</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h4>Canais de Denúncia</h4>
+        <ul>
+          <li><strong>SaferNet</strong> — denúncia anônima online</li>
+          <li><strong>Disque 100</strong> — Direitos Humanos 24h</li>
+          <li><strong>CVV 188</strong> — apoio emocional 24h</li>
+          <li><strong>Polícia Federal</strong> — crimes cibernéticos</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>Protocolo de Denúncia</h4>
+        <div class="timeline" style="margin-top:8px">
+          <div class="step"><span class="num">1</span>Print</div>
+          <span style="color:var(--ink-soft)">→</span>
+          <div class="step"><span class="num">2</span>Bloquear</div>
+          <span style="color:var(--ink-soft)">→</span>
+          <div class="step"><span class="num">3</span>Denunciar</div>
+          <span style="color:var(--ink-soft)">→</span>
+          <div class="step"><span class="num">4</span>Adulto</div>
+          <span style="color:var(--ink-soft)">→</span>
+          <div class="step"><span class="num">5</span>Canal</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 10: DEMONSTRAÇÃO ==================== -->
+<section>
+  <div class="slide-tag accent">Ao Vivo</div>
+  <h2>Demonstração</h2>
+  <p style="font-size:1em!important">Abrir o jogo no navegador e demonstrar:</p>
+  <div class="cols cols-2" style="margin-top:20px">
+    <div>
+      <div class="card">
+        <h4>Roteiro sugerido (1 min)</h4>
+        <ol>
+          <li>Tela inicial → Como Jogar</li>
+          <li>Mapa-Múndi → Selecionar fase 1-1</li>
+          <li>Gameplay: andar, pular, coletar print</li>
+          <li>Abrir puzzle (Painel de Reparação)</li>
+          <li>Resolver e ver nuvem → Plataforma Solidária</li>
+        </ol>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="border-color:var(--accent)!important">
+        <h4 style="color:var(--accent2)!important">Pontos a destacar</h4>
+        <ul>
+          <li>A resiliência diminui perto de nuvens tóxicas</li>
+          <li>O puzzle ensina conteúdo real</li>
+          <li>A nuvem resolvida vira caminho seguro</li>
+          <li>O print desbloqueia Acervo de Provas</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 11: ARTICULAÇÃO TEÓRICA ==================== -->
+<section>
+  <div class="slide-tag">Síntese</div>
+  <h2>Articulação dos Conceitos</h2>
+  <div style="margin-top:20px">
+    <div class="flow-diagram" style="margin-bottom:20px">
+      <div class="box accent" style="padding:16px 22px">
+        <strong>Círculo Mágico</strong><br>
+        <span style="font-size:.8em;color:var(--ink-soft)">Espaço seguro onde o adolescente experimenta o cyberbullying sem consequências reais</span>
+      </div>
+      <span class="arr" style="font-size:1.6em">→</span>
+      <div class="box good" style="padding:16px 22px">
+        <strong>Mecânicas</strong><br>
+        <span style="font-size:.8em;color:var(--ink-soft)">Resiliência, puzzles, prints, progressão — regras que simulam a experiência real</span>
+      </div>
+      <span class="arr" style="font-size:1.6em">→</span>
+      <div class="box" style="padding:16px 22px;border-color:var(--gold)!important">
+        <strong style="color:var(--gold)">Aprendizagem</strong><br>
+        <span style="font-size:.8em;color:var(--ink-soft)">O jogador internaliza leis, canais, protocolo e empatia pela ação</span>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <p style="text-align:center;font-size:.8em!important">
+      Quando o círculo mágico se fecha (tela de Vitória), o jogador leva para o mundo real:<br>
+      <strong>leis que protegem</strong> · <strong>canais que funcionam</strong> · <strong>protocolo que pode seguir</strong> · <strong>empatia como prática</strong>
+    </p>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 12: PRÓXIMOS PASSOS ==================== -->
+<section>
+  <div class="slide-tag">Encaminhamento</div>
+  <h2>Próximos Passos</h2>
+  <div class="cols cols-2" style="margin-top:16px">
+    <div>
+      <div class="card">
+        <h4>Curto Prazo</h4>
+        <ul>
+          <li>Persistência com <code>localStorage</code></li>
+          <li>Suporte a touch/mobile</li>
+          <li>Testes com público-alvo</li>
+          <li>Acessibilidade (ARIA, contraste)</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h4>Médio Prazo</h4>
+        <ul>
+          <li>Novos mundos e puzzles</li>
+          <li>Dashboard do professor</li>
+          <li>Localização (EN/ES)</li>
+          <li>Avaliação de impacto educacional</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 13: REFERÊNCIAS ==================== -->
+<section>
+  <div class="slide-tag">Referências</div>
+  <h2>Referências</h2>
+  <div style="columns:2;column-gap:32px;text-align:left;margin-top:12px">
+    <p style="font-size:.55em!important;line-height:1.5!important">
+      HUIZINGA, J. <em>Homo Ludens</em>. 1938.<br><br>
+      SALEN, K.; ZIMMERMAN, E. <em>Rules of Play</em>. MIT Press, 2004.<br><br>
+      HUNICKE, R. et al. MDA: A Formal Approach to Game Design. AAAI, 2004.<br><br>
+      SICART, M. Defining Game Mechanics. <em>Game Studies</em>, 2008.<br><br>
+      GEE, J. P. <em>What Video Games Have to Teach Us</em>. 2003.<br><br>
+      PRENSKY, M. <em>Digital Game-Based Learning</em>. 2001.<br><br>
+      UNICEF. <em>Estado Mundial da Infância 2017</em>.<br><br>
+      CGI.br. <em>TIC Kids Online Brasil 2023</em>.<br><br>
+      Brasil. Lei 13.185/2015; Lei 14.811/2024; ECA (Lei 8.069/1990).
+    </p>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 14: ENCERRAMENTO ==================== -->
+<section>
+  <h1 style="font-size:2.2em!important">Obrigado!</h1>
+  <p style="font-size:.9em!important;margin-top:16px">
+    <strong>Eco Digital: O Labirinto da Reputação</strong>
+  </p>
+  <p style="margin-top:24px">
+    <ul class="team-list">
+      <li>Arthur Lopes</li>
+      <li>Marcos Pierre</li>
+      <li>João Lucas</li>
+      <li>Jeová Bezerra</li>
+    </ul>
+  </p>
+  <p style="margin-top:20px;font-size:.65em;color:var(--ink-soft)">Engenharia de Software Educativo · 2026.1</p>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.js"></script>
+<script>
+Reveal.initialize({
+  hash: true,
+  slideNumber: true,
+  progress: true,
+  controls: true,
+  center: true,
+  transition: 'slide',
+  width: 1100,
+  height: 700,
+  margin: 0.06,
+});
+</script>
+</body>
+</html>
