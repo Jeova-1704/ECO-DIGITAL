@@ -1,0 +1,3049 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Eco Digital: O Labirinto da Reputação · v2</title>
+<style>
+/* ============================================================
+   ECO DIGITAL v2 — single file
+   Sistemas: Save · Audio · Map · Engine · Puzzle · HUD · Archive
+   ============================================================ */
+
+:root{
+  --bg:        #0b0e1a;
+  --bg-2:      #11152a;
+  --ink:       #ecedf6;
+  --ink-soft:  #a7adc8;
+  --line:      #232844;
+  --warm:      #f4ead6;
+  --solid:     #e9e1c6;
+  --good:      #67e8c5;
+  --good-2:    #9af2d3;
+  --toxic:     #c93b8a;
+  --toxic-2:   #6c1e6a;
+  --accent:    #f0a05a;
+  --accent-2:  #fbd49a;
+  --danger:    #ff5d6c;
+  --gold:      #f6c64a;
+  --silver:    #cfd5e6;
+  --bronze:    #c98f5a;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  background: radial-gradient(120% 80% at 50% 0%, #161a32 0%, #0a0d1a 60%, #06081288 100%), var(--bg);
+  color:var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+button{font: inherit; color: inherit}
+.mono{font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace}
+
+#stage{position:fixed; inset:0; display:grid; place-items:center}
+#frame{
+  position:relative;
+  width: min(96vw, calc(96vh * 16 / 9));
+  aspect-ratio: 16/9;
+  background:#0a0d1c;
+  border-radius: 18px;
+  overflow:hidden;
+  box-shadow: 0 30px 80px -20px rgba(0,0,0,.6), 0 0 0 1px #1a1f3a inset;
+}
+canvas#game{position:absolute; inset:0; width:100%; height:100%; image-rendering:pixelated}
+
+/* Common buttons */
+.btn{
+  appearance:none; border: 0; cursor:pointer;
+  padding: 12px 20px; border-radius: 999px;
+  background: linear-gradient(180deg, #f7c98a, #f0a05a);
+  color:#1a1224; font-weight:600; letter-spacing:.02em;
+  box-shadow: 0 10px 30px -10px rgba(240,160,90,.5), inset 0 -2px 0 rgba(0,0,0,.08);
+  transition: transform .15s ease;
+}
+.btn:hover{transform: translateY(-1px)}
+.btn:disabled{opacity:.4; cursor:not-allowed; transform:none}
+.btn.ghost{background: transparent; color: var(--ink); border:1px solid var(--line); box-shadow:none}
+.btn.small{padding:8px 14px; font-size: 13px}
+
+kbd{
+  display:inline-block; padding: 3px 7px; border-radius: 6px;
+  background:#1a1f3a; border:1px solid #2a3057;
+  font-family:"JetBrains Mono", ui-monospace, monospace; font-size:11px; min-width:22px; text-align:center;
+}
+.eyebrow{
+  font-family:"JetBrains Mono", ui-monospace, monospace;
+  font-size:11px; letter-spacing:.32em; text-transform:uppercase; color:var(--ink-soft);
+}
+.eyebrow .dot{display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--good); margin-right:8px; vertical-align:2px; box-shadow: 0 0 12px var(--good)}
+h1.title{font-size: clamp(28px, 4.2vw, 60px); line-height:.98; letter-spacing:-.02em; margin:18px 0 14px; font-weight:700}
+h1.title .accent{background: linear-gradient(90deg,#9af2d3,#67e8c5 40%,#f0a05a); -webkit-background-clip:text; background-clip:text; color:transparent}
+.lede{color:var(--ink-soft); max-width: 50ch; font-size: clamp(13px, 1.1vw, 16px); line-height:1.55; text-wrap: pretty}
+.ctaRow{margin-top:24px; display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+
+/* ===== Overlays ===== */
+.overlay{position:absolute; inset:0; display:none; z-index:5}
+.overlay.show{display:block}
+
+/* Title */
+#titleScreen{
+  background:
+    radial-gradient(60% 80% at 50% 30%, #1c2244 0%, transparent 70%),
+    radial-gradient(40% 40% at 80% 80%, #2a1a3f 0%, transparent 70%),
+    radial-gradient(40% 40% at 15% 70%, #112d2b 0%, transparent 70%),
+    #0a0d1c;
+}
+#titleScreen .inner{position:absolute; inset:0; display:grid; grid-template-columns: 1.1fr 1fr; gap:28px; padding:6% 7%; align-items:center}
+.titleArt{position:relative; height:78%; aspect-ratio:1/1; margin-left:auto; border-radius:18px;
+  background: radial-gradient(60% 60% at 30% 30%, #1b2046 0%, transparent 70%), radial-gradient(50% 50% at 80% 70%, #2a1a3f 0%, transparent 70%), linear-gradient(180deg, #0c1024, #06081a);
+  border:1px solid #1a1f3a; overflow:hidden}
+.titleArt::before{content:""; position:absolute; inset:0;
+  background-image: linear-gradient(to right, rgba(255,255,255,.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.04) 1px, transparent 1px);
+  background-size: 28px 28px; mask-image: radial-gradient(80% 60% at 50% 50%, #000 0%, transparent 100%)}
+.plat{position:absolute; height:14px; border-radius:6px; background: linear-gradient(180deg,#f4ead6,#d6caa6); box-shadow:0 6px 0 rgba(0,0,0,.25)}
+.platG{position:absolute; height:14px; border-radius:6px; background: linear-gradient(180deg,#9af2d3,#67e8c5); box-shadow:0 0 24px rgba(103,232,197,.45), 0 6px 0 rgba(0,0,0,.25)}
+.cloudArt{position:absolute; border-radius:14px;
+  background: repeating-linear-gradient(45deg, rgba(255,255,255,.06) 0 2px, transparent 2px 6px), linear-gradient(180deg,#c93b8a,#6c1e6a);
+  box-shadow: 0 0 24px rgba(201,59,138,.45), inset 0 0 0 1px rgba(255,255,255,.12)}
+
+/* World map — overlay is transparent so canvas shows nodes */
+#mapScreen{background: transparent; pointer-events: none}
+#mapScreen .mapTop, #mapScreen .mapNodePanel, #mapScreen .mapHint{pointer-events: auto}
+#mapScreen.show ~ #game, body.map-bg #game{background: radial-gradient(80% 60% at 50% 20%, #131836 0%, #07091a 70%, #05071a 100%)}
+.mapTop{position:absolute; top:0; left:0; right:0; padding:18px 22px; display:flex; align-items:center; justify-content:space-between; gap:16px; z-index:2}
+.mapTop .ttl{font-weight:700; font-size:18px; letter-spacing:-.01em}
+.mapTop .subtle{color:var(--ink-soft); font-size:12px}
+.mapTop .totals{
+  display:inline-flex; align-items:center; gap:8px;
+  background: rgba(10,13,28,.6); border:1px solid #1f2444; border-radius:999px; padding:8px 14px;
+  font-family:"JetBrains Mono", ui-monospace, monospace; font-size:12px;
+}
+.print-ico{width:14px; height:14px; border-radius:3px; background: linear-gradient(180deg,#f7c98a,#f0a05a); box-shadow: 0 0 0 2px rgba(240,160,90,.18); display:inline-block}
+.medalChip{display:inline-flex; align-items:center; gap:6px; padding:4px 10px; background:#0e1228; border:1px solid #1f2444; border-radius:999px; font-size:11px}
+.medal-dot{width:8px; height:8px; border-radius:50%}
+.m-g{background:var(--gold); box-shadow:0 0 6px var(--gold)}
+.m-s{background:var(--silver)}
+.m-b{background:var(--bronze)}
+.m-x{background:#2a2f4d}
+
+.mapNodePanel{
+  position:absolute; right:22px; bottom:22px; width: 360px;
+  background: rgba(14,18,40,.85); border:1px solid #1f2444; border-radius:14px;
+  padding:18px; backdrop-filter: blur(8px);
+  display:none; z-index:3;
+}
+.mapNodePanel.show{display:block}
+.mapNodePanel .pn-h{display:flex; align-items:center; justify-content:space-between; gap:10px}
+.mapNodePanel .pn-h .lbl{font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink-soft)}
+.mapNodePanel h3{margin:6px 0 6px; font-size:18px}
+.mapNodePanel .obj{font-size:12px; color:var(--ink-soft); margin-top:8px; line-height:1.5}
+.mapNodePanel .obj .row{display:flex; align-items:center; gap:8px}
+.mapNodePanel .obj .row .b{width:14px; height:14px; border-radius:4px; background:#1d2350; display:grid; place-items:center; font-size:9px; color:var(--ink)}
+.mapNodePanel .ctaRow{margin-top:12px}
+
+.mapHint{position:absolute; bottom:22px; left:22px; color:var(--ink-soft); font-size:12px; font-family:"JetBrains Mono", monospace; letter-spacing:.08em}
+.mapHint kbd{margin: 0 2px}
+
+/* HUD on level */
+#hud{position:absolute; inset:0; pointer-events:none; color:var(--ink); font-family:"JetBrains Mono", ui-monospace, monospace}
+.hud-row{position:absolute; top:14px; left:18px; right:18px; display:flex; align-items:center; justify-content:space-between; gap:14px}
+.hud-card{background: rgba(10,13,28,.55); backdrop-filter: blur(6px); border:1px solid rgba(255,255,255,.06); padding:8px 12px; border-radius:999px; display:inline-flex; align-items:center; gap:10px}
+.label{font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink-soft)}
+.bar{width: 180px; height:10px; background:#1a1f3a; border-radius:999px; overflow:hidden; position:relative}
+.bar > i{display:block; height:100%; background: linear-gradient(90deg, #67e8c5, #9af2d3); width:100%; transition: width .25s ease, background .25s ease}
+.bar.low > i{background: linear-gradient(90deg,#ff5d6c,#f0a05a)}
+.bar.shielded > i{background: linear-gradient(90deg, #9af2d3, #f6c64a)}
+.count{font-variant-numeric: tabular-nums}
+.of{color:var(--ink-soft); margin-left:4px}
+
+.hud-mid{position:absolute; top:54px; left:50%; transform:translateX(-50%); display:flex; gap:10px; align-items:center}
+.timer{background: rgba(10,13,28,.55); border:1px solid rgba(255,255,255,.06); padding:6px 12px; border-radius:999px; font-size:12px}
+.timer.warn{color:var(--danger); border-color: rgba(255,93,108,.4)}
+.power-active{display:none; padding:6px 10px; background: rgba(10,13,28,.55); border:1px solid rgba(155,242,211,.3); border-radius:999px; font-size:11px; color:var(--good-2)}
+.power-active.show{display:inline-flex; align-items:center; gap:8px}
+.power-active .pdot{width:8px; height:8px; border-radius:50%; background:var(--good); box-shadow:0 0 8px var(--good)}
+
+/* Mini-map */
+.minimap{position:absolute; bottom:14px; left:50%; transform:translateX(-50%); width: 44%; height: 22px; background: rgba(10,13,28,.55); border:1px solid rgba(255,255,255,.06); border-radius:999px; overflow:hidden; padding:0 10px; display:flex; align-items:center}
+.minimap .track{position:relative; flex:1; height:2px; background: rgba(255,255,255,.08); border-radius:1px}
+.minimap .mi-player{position:absolute; top:50%; transform: translate(-50%,-50%); width:10px; height:10px; border-radius:50%; background:#9af2d3; box-shadow:0 0 10px #9af2d3}
+.minimap .mi-cloud{position:absolute; top:50%; transform: translate(-50%,-50%); width:8px; height:8px; border-radius:2px; background: var(--toxic); box-shadow:0 0 6px var(--toxic)}
+.minimap .mi-cloud.solved{background: var(--good); box-shadow:0 0 6px var(--good)}
+.minimap .mi-goal{position:absolute; top:50%; right:0; transform: translate(0,-50%); width:8px; height:14px; background: linear-gradient(180deg,#9af2d3,#67e8c5); border-radius:2px}
+
+.hint{position:absolute; bottom:46px; left:50%; transform: translateX(-50%); padding:8px 14px; background: rgba(10,13,28,.6); border:1px solid rgba(255,255,255,.06); border-radius:999px; font-size:12px; letter-spacing:.08em; color:var(--ink-soft); backdrop-filter: blur(6px); opacity:0; transition: opacity .25s ease}
+.hint.show{opacity:1}
+
+#flash{position:absolute; inset:0; pointer-events:none; background: radial-gradient(60% 60% at 50% 50%, transparent 60%, rgba(255,93,108,.35)); opacity:0; transition: opacity .15s ease}
+#flash.on{opacity:1}
+#mirrorFx{position:absolute; inset:0; pointer-events:none; background: linear-gradient(180deg, rgba(201,59,138,.06), rgba(103,232,197,.06)); opacity:0; transition: opacity .3s ease}
+#mirrorFx.on{opacity:1}
+.level-canvas-mirror{transform: scaleX(-1)}
+
+.toast{position:absolute; top:64px; left:50%; transform: translateX(-50%) translateY(-8px); background: rgba(10,13,28,.85); border:1px solid #2a3057; border-radius:999px; padding:8px 16px; font-family:"JetBrains Mono", ui-monospace, monospace; font-size:12px; letter-spacing:.06em; opacity:0; transition: opacity .25s ease, transform .25s ease; z-index:6; pointer-events:none}
+.toast.show{opacity:1; transform: translateX(-50%) translateY(0)}
+.toast.good{border-color:#2c5b4b; color:var(--good-2)}
+.toast.bad{border-color:#5c2230; color:#ffb3b8}
+
+/* Level intro modal */
+#introScreen{background: rgba(6,8,18,.78); backdrop-filter: blur(8px)}
+.intro-card{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width: min(720px, 80%); background:#0e1228; border:1px solid #1f2444; border-radius:18px; padding:22px; box-shadow: 0 40px 80px -20px rgba(0,0,0,.6)}
+.intro-card h3{margin:8px 0 6px; font-size: 24px}
+.intro-card .obj-list{display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:14px}
+.obj-card{background:#14193a; border:1px solid #2a3057; border-radius:12px; padding:12px}
+.obj-card .o-l{font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink-soft)}
+.obj-card .o-t{margin-top:4px; font-size:14px}
+.obj-card .o-d{color:var(--ink-soft); font-size:12px; margin-top:4px}
+
+/* Puzzle overlay */
+#puzzleScreen{background: rgba(6,8,18,.78); backdrop-filter: blur(8px)}
+.puzzle-card{position:absolute; inset: 5% 7%; background:#0e1228; border:1px solid #1f2444; border-radius:18px; box-shadow: 0 40px 80px -20px rgba(0,0,0,.6); display:grid; grid-template-rows:auto 1fr auto; overflow:hidden}
+.puzzle-head{padding:16px 22px; border-bottom: 1px solid #1f2444; display:flex; align-items:flex-start; justify-content:space-between; gap:16px}
+.puzzle-head .tag{display:inline-flex; align-items:center; gap:8px; font-family:"JetBrains Mono", ui-monospace, monospace; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink-soft)}
+.puzzle-head .tag .dot{width:8px; height:8px; border-radius:50%; background:var(--toxic); box-shadow:0 0 12px var(--toxic)}
+.puzzle-head h2{margin: 6px 0 0; font-size: 22px; letter-spacing:-.01em}
+.puzzle-head .sub{color:var(--ink-soft); font-size: 13px; max-width: 56ch; margin-top:6px}
+.puzzle-body{position:relative; padding: 20px 22px; overflow:auto}
+.puzzle-foot{padding:12px 22px; border-top:1px solid #1f2444; display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--ink-soft); font-size:13px}
+.puzzle-foot .status{font-family:"JetBrains Mono", ui-monospace, monospace; font-size:12px; letter-spacing:.06em}
+.puzzle-foot .status.ok{color:var(--good)}
+.puzzle-foot .status.bad{color:var(--danger)}
+
+/* Puzzle A nodes */
+.nodes{position:relative; width:100%; min-height: 340px; height: 380px}
+.node{position:absolute; width:172px; background:#14193a; border:1px solid #2a3057; border-radius:14px; padding:12px 14px 10px; cursor:pointer; transition: transform .12s ease, border-color .2s ease, background .2s ease; user-select:none}
+.node:hover{transform: translateY(-1px); border-color:#3a4280}
+.node.sel{border-color: var(--good); background:#163a31; box-shadow:0 0 0 3px rgba(103,232,197,.12)}
+.node.bad{border-color: var(--danger); background:#3a1820; animation: shake .35s ease}
+@keyframes shake{0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)}}
+.node .role{font-family:"JetBrains Mono", ui-monospace, monospace; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-soft)}
+.node .who{font-size:17px; font-weight:600; margin-top:4px}
+.node .desc{margin-top:6px; font-size:12px; color:var(--ink-soft); line-height:1.4}
+.node .num{position:absolute; top:-10px; right:-10px; width:26px; height:26px; border-radius:50%; background:var(--good); color:#0a1a15; display:grid; place-items:center; font-weight:700; font-size:13px; box-shadow:0 0 0 3px #0e1228; opacity:0; transform: scale(.6); transition: opacity .2s ease, transform .2s ease}
+.node.sel .num{opacity:1; transform: scale(1)}
+svg.wires{position:absolute; inset:0; pointer-events:none}
+
+/* Puzzle B words */
+.phrase-wrap{display:flex; flex-direction:column; gap: 16px}
+.phrase{font-size: clamp(17px, 1.6vw, 22px); line-height:1.5; background:#14193a; border:1px dashed #2a3057; border-radius:12px; padding: 16px}
+.word{display:inline-flex; align-items:center; margin: 4px 4px; padding: 6px 12px; border-radius: 10px; background:#1a1f3a; border:1px solid #2a3057; cursor:pointer; transition: transform .12s ease, background .2s ease, border-color .2s ease; user-select:none}
+.word:hover{transform: translateY(-1px)}
+.word.ataque{background: linear-gradient(180deg,#3a1830,#2a1228); border-color: var(--toxic); color:#ffb3d6; text-decoration: line-through; text-decoration-color: var(--toxic)}
+.word.fato{background: linear-gradient(180deg,#163a31,#0e2a23); border-color: var(--good); color:var(--good-2)}
+.word.wrong{animation: shake .35s ease; border-color: var(--danger)}
+.legendRow{display:flex; gap:18px; align-items:center; font-family:"JetBrains Mono", ui-monospace, monospace; font-size:12px; color:var(--ink-soft); flex-wrap:wrap}
+.legend{display:inline-flex; align-items:center; gap:8px}
+.swatch{width:14px; height:14px; border-radius:4px; border:1px solid #2a3057}
+.swatch.a{background:var(--toxic)} .swatch.f{background:var(--good)}
+
+/* Puzzle C/E/D shared option list */
+.option{display:block; width:100%; text-align:left; background:#14193a; border:1px solid #2a3057; border-radius:12px; padding:12px 14px; color:var(--ink); cursor:pointer; transition: border-color .2s ease, background .2s ease, transform .12s ease; margin-bottom:10px}
+.option:hover{border-color:#3a4280; transform: translateY(-1px)}
+.option.sel{border-color: var(--good); background:#163a31}
+.option.bad{border-color: var(--danger); background:#3a1820; animation: shake .35s ease}
+.option .ot{font-weight:600}
+.option .od{color: var(--ink-soft); font-size: 12px; margin-top: 4px}
+
+.situation{background:#14193a; border:1px solid #2a3057; border-radius:12px; padding: 14px 16px; margin-bottom:14px; line-height:1.5}
+.situation .tag{font-family:"JetBrains Mono", monospace; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink-soft)}
+.situation .text{margin-top:6px; font-size:15px}
+
+/* Puzzle D order */
+.steps{display:flex; flex-direction:column; gap:8px; max-width: 760px}
+.step{background:#14193a; border:1px solid #2a3057; border-radius:12px; padding:10px 14px; display:flex; align-items:center; gap:12px; cursor:pointer; user-select:none; transition: border-color .2s ease, transform .12s ease}
+.step:hover{border-color:#3a4280; transform: translateY(-1px)}
+.step .num{width:26px; height:26px; border-radius:50%; background:#1a1f3a; border:1px solid #2a3057; display:grid; place-items:center; font-size:13px; color:var(--ink-soft); flex:none}
+.step.sel .num{background:var(--good); color:#0a1a15; border-color:transparent}
+.step .label{flex:1}
+.step.bad{border-color: var(--danger); animation: shake .35s ease}
+
+/* Puzzle F reconstruct */
+.recon-wrap{display:flex; flex-direction:column; gap:12px}
+.recon-target{min-height: 64px; background:#14193a; border:1px dashed #2a3057; border-radius:12px; padding: 12px; display:flex; flex-wrap:wrap; gap:6px; align-content:flex-start}
+.recon-bank{display:flex; flex-wrap:wrap; gap:8px; background: #0e1228; border:1px solid #1f2444; border-radius:12px; padding:12px}
+.tile{display:inline-block; padding:6px 12px; background:#1a1f3a; border:1px solid #2a3057; border-radius:10px; cursor:pointer; user-select:none; transition: transform .12s ease, border-color .2s ease}
+.tile:hover{transform: translateY(-1px); border-color:#3a4280}
+.tile.in-target{background: linear-gradient(180deg,#163a31,#0e2a23); border-color: var(--good); color:var(--good-2)}
+
+/* Archive */
+#archiveScreen{background:#07091a}
+.archive-wrap{position:absolute; inset:0; padding: 6% 7%; display:grid; grid-template-rows: auto 1fr auto; gap:20px}
+.archive-grid{display:grid; grid-template-columns: repeat(4, 1fr); gap:14px; overflow:auto}
+.print-card{background:#0e1228; border:1px solid #1f2444; border-radius:12px; padding:14px; min-height:120px}
+.print-card .pn{font-family:"JetBrains Mono", monospace; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--accent)}
+.print-card .pt{font-size:14px; margin-top:6px; font-weight:600}
+.print-card .pd{font-size:12px; color:var(--ink-soft); margin-top:6px; line-height:1.4}
+.print-card.locked{opacity:.35}
+.print-card.locked .pt::before{content:"🔒 ";}
+
+/* Victory / final */
+#victoryScreen{background: radial-gradient(70% 60% at 50% 20%, rgba(103,232,197,.18) 0%, transparent 60%), radial-gradient(50% 50% at 80% 70%, rgba(240,160,90,.12) 0%, transparent 60%), #07091a}
+.v-inner{position:absolute; inset:0; display:grid; grid-template-columns: 1.05fr .95fr; gap:28px; padding:6% 7%; align-items:center}
+.channels{display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:18px}
+.chan{background:#0e1228; border:1px solid #1f2444; border-radius:14px; padding:14px 16px}
+.chan .nm{font-weight:600; font-size:15px}
+.chan .ds{color:var(--ink-soft); font-size:12px; margin-top:4px; line-height:1.4}
+.chan .ph{margin-top:8px; font-family:"JetBrains Mono", ui-monospace, monospace; color:var(--good); font-size:13px}
+
+/* Over screen */
+#overScreen{background: rgba(6,8,18,.85); backdrop-filter: blur(6px)}
+.over-inner{position:absolute; inset:0; display:grid; place-items:center; padding:6% 8%; text-align:center}
+
+/* How to play / About modals */
+#howScreen, #aboutScreen{background: rgba(6,8,18,.85); backdrop-filter: blur(6px)}
+.modal-card{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width: min(820px, 86%); max-height: 84%; overflow:auto; background:#0e1228; border:1px solid #1f2444; border-radius:18px; padding:24px; box-shadow:0 40px 80px -20px rgba(0,0,0,.6)}
+.modal-card h2{margin: 0 0 8px}
+.modal-card p, .modal-card li{color: var(--ink-soft); line-height:1.55; font-size:14px}
+.modal-card .grid2{display:grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top:14px}
+.modal-card .grid2 .cell{background:#14193a; border:1px solid #2a3057; border-radius:12px; padding:14px}
+.modal-card .grid2 .cell h4{margin: 0 0 4px; font-size: 14px}
+.modal-card .grid2 .cell p{margin: 0; font-size: 12px}
+.modal-card .close{position: sticky; top:0; float:right; margin-left:auto}
+
+/* Results card after level */
+#resultScreen{background: rgba(6,8,18,.78); backdrop-filter: blur(8px)}
+.result-card{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:min(560px, 80%); background:#0e1228; border:1px solid #1f2444; border-radius:18px; padding:26px; text-align:center; box-shadow:0 40px 80px -20px rgba(0,0,0,.6)}
+.result-card .medals{display:flex; gap:14px; justify-content:center; margin: 18px 0 4px}
+.medal{width:64px; height:64px; border-radius:50%; display:grid; place-items:center; background:#0a0d1c; border:2px solid #2a3057; color:var(--ink-soft); font-family:"JetBrains Mono", monospace; font-size:11px; letter-spacing:.1em; opacity:.45; transition: opacity .3s ease, transform .3s ease}
+.medal.earned{opacity:1; transform: scale(1.05)}
+.medal.b{border-color: var(--bronze); color: var(--bronze); box-shadow:0 0 0 1px rgba(201,143,90,.15)}
+.medal.s{border-color: var(--silver); color: var(--silver)}
+.medal.g{border-color: var(--gold); color: var(--gold); box-shadow:0 0 14px rgba(246,198,74,.35)}
+.result-card .obj-check{margin-top:18px; display:flex; flex-direction:column; gap:6px; align-items:flex-start; text-align:left; max-width:420px; margin-left:auto; margin-right:auto}
+.result-card .obj-check .ok{color:var(--good)}
+.result-card .obj-check .no{color:var(--ink-soft); opacity:.7}
+
+/* Small screens */
+@media (max-width: 720px){
+  #titleScreen .inner{grid-template-columns: 1fr; padding: 5% 6%}
+  .titleArt{display:none}
+  .v-inner{grid-template-columns:1fr}
+  .archive-grid{grid-template-columns: 1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div id="stage"><div id="frame">
+  <canvas id="game" width="1600" height="900"></canvas>
+
+  <!-- HUD overlays -->
+  <div id="hud">
+    <div class="hud-row">
+      <div class="hud-card" id="resilWrap" title="Resiliência Emocional">
+        <span class="label">Resiliência</span>
+        <div class="bar" id="resBar"><i style="width:100%"></i></div>
+      </div>
+      <div class="hud-card">
+        <span class="print-ico"></span>
+        <span><span class="count" id="printCount">0</span><span class="of"> / <span id="printTotal">0</span> prints da fase</span></span>
+      </div>
+      <div class="hud-card" id="totalPrintsCard">
+        <span class="label">Acervo</span>
+        <span class="count" id="totalPrints">0</span>
+      </div>
+    </div>
+    <div class="hud-mid">
+      <div class="timer" id="timer" style="display:none"><span id="timerVal">--</span></div>
+      <div class="power-active" id="powerActive"><span class="pdot"></span><span id="powerLabel"></span> · <span id="powerSecs"></span>s</div>
+    </div>
+    <div class="minimap" id="minimap">
+      <div class="track" id="mmTrack">
+        <span class="mi-goal"></span>
+      </div>
+    </div>
+    <div class="hint" id="hint">Pressione <kbd>E</kbd> para abrir o Painel de Reparação</div>
+  </div>
+  <div id="mirrorFx"></div>
+  <div id="flash"></div>
+  <div class="toast" id="toast"></div>
+</div></div>
+
+
+<!-- =================== Title screen =================== -->
+<section id="titleScreen" class="overlay show">
+  <div class="inner">
+    <div>
+      <div class="eyebrow"><span class="dot"></span>Plataforma · Puzzle Educativo · 12–17 anos</div>
+      <h1 class="title">Eco Digital<br><span class="accent">O Labirinto da Reputação</span></h1>
+      <p class="lede">
+        O Espaço Digital — feed, chat, fórum — está sendo coberto por <strong>Nuvens de Toxicidade</strong>.
+        Atravesse três mundos desarmando ataques, juntando provas e silenciando haters
+        com <em>denúncia</em>, não com violência.
+      </p>
+      <div class="ctaRow">
+        <button class="btn" id="btnPlay">Jogar</button>
+        <button class="btn ghost" id="btnHow">Como Jogar</button>
+        <button class="btn ghost" id="btnAbout">Sobre o Cyberbullying</button>
+      </div>
+      <div class="eyebrow" style="margin-top:18px">ECA · Lei 13.185/2015 · Lei 14.811/2024</div>
+    </div>
+    <div class="titleArt" aria-hidden="true">
+      <div class="plat" style="left:8%; bottom:22%; width:28%"></div>
+      <div class="plat" style="left:46%; bottom:36%; width:18%"></div>
+      <div class="platG" style="left:66%; bottom:18%; width:24%"></div>
+      <div class="plat" style="left:14%; bottom:62%; width:20%"></div>
+      <div class="cloudArt" style="left:42%; bottom:60%; width:18%; height:46px"></div>
+      <div class="cloudArt" style="left:18%; bottom:42%; width:14%; height:38px"></div>
+      <div style="position:absolute; left:12%; bottom:32%; width:18px; height:18px; border-radius:4px; background:linear-gradient(180deg,#f7c98a,#f0a05a); box-shadow:0 0 16px #f0a05a"></div>
+      <div style="position:absolute; left:70%; bottom:30%; width:18px; height:18px; border-radius:4px; background:linear-gradient(180deg,#f7c98a,#f0a05a); box-shadow:0 0 16px #f0a05a"></div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== World map =================== -->
+<section id="mapScreen" class="overlay">
+  <div class="mapTop">
+    <div>
+      <div class="eyebrow"><span class="dot"></span>Mapa do Espaço Digital</div>
+      <div class="ttl">Escolha sua próxima fase</div>
+      <div class="subtle">Cada nó é uma fase. Caminhe até ela e pressione <kbd>E</kbd> para começar.</div>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end">
+      <span class="totals"><span class="print-ico"></span> <span id="mapTotalPrints">0</span> prints no acervo</span>
+      <span class="totals"><span class="medal-dot m-g"></span><span id="mapGolds">0</span> · <span class="medal-dot m-s"></span><span id="mapSilvers">0</span> · <span class="medal-dot m-b"></span><span id="mapBronzes">0</span></span>
+      <button class="btn ghost small" id="btnArchive">Acervo de Provas</button>
+      <button class="btn ghost small" id="btnMapTitle">Tela inicial</button>
+    </div>
+  </div>
+  <div class="mapNodePanel" id="mapNodePanel">
+    <div class="pn-h">
+      <div>
+        <div class="lbl" id="pnLbl">MUNDO · FASE</div>
+        <h3 id="pnTitle">—</h3>
+      </div>
+      <div class="medalChip" id="pnMedal"><span class="medal-dot m-x"></span><span>Não jogada</span></div>
+    </div>
+    <div class="lede" id="pnDesc" style="font-size:13px; margin-top:6px">—</div>
+    <div class="obj" id="pnObj"></div>
+    <div class="ctaRow">
+      <button class="btn" id="pnStart">Começar</button>
+      <button class="btn ghost" id="pnClose">Fechar</button>
+    </div>
+  </div>
+  <div class="mapHint">Mover: <kbd>←</kbd><kbd>→</kbd> · Selecionar: <kbd>E</kbd> · Voltar: <kbd>Esc</kbd></div>
+</section>
+
+<!-- =================== Level intro =================== -->
+<section id="introScreen" class="overlay">
+  <div class="intro-card">
+    <div class="eyebrow"><span class="dot"></span><span id="introTag">MUNDO 1 · FASE 1</span></div>
+    <h3 id="introTitle">Comentários Tóxicos</h3>
+    <div class="lede" id="introDesc">—</div>
+    <div class="obj-list" id="introObjs"></div>
+    <div class="ctaRow" style="justify-content:flex-end">
+      <button class="btn ghost" id="introBack">Voltar ao mapa</button>
+      <button class="btn" id="introStart">Iniciar fase</button>
+    </div>
+  </div>
+</section>
+
+<!-- =================== Puzzle =================== -->
+<section id="puzzleScreen" class="overlay">
+  <div class="puzzle-card">
+    <header class="puzzle-head">
+      <div>
+        <div class="tag"><span class="dot"></span><span id="pzTag">PAINEL DE REPARAÇÃO</span></div>
+        <h2 id="pzTitle">—</h2>
+        <div class="sub" id="pzSub">—</div>
+      </div>
+    </header>
+    <div class="puzzle-body" id="pzBody"></div>
+    <footer class="puzzle-foot">
+      <span class="status" id="pzStatus">AGUARDANDO ENTRADA</span>
+      <div style="display:flex; gap:8px">
+        <button class="btn ghost" id="pzCancel">Recuar</button>
+        <button class="btn" id="pzCheck">Verificar</button>
+      </div>
+    </footer>
+  </div>
+</section>
+
+<!-- =================== Result =================== -->
+<section id="resultScreen" class="overlay">
+  <div class="result-card">
+    <div class="eyebrow"><span class="dot"></span><span id="resTag">FASE CONCLUÍDA</span></div>
+    <h2 id="resTitle" style="margin:6px 0 0">Plataforma Solidária construída.</h2>
+    <div class="lede" id="resDesc" style="margin-left:auto; margin-right:auto">Você restaurou esta parte do Espaço Digital.</div>
+    <div class="medals">
+      <div class="medal b" id="medalB">BRONZE</div>
+      <div class="medal s" id="medalS">PRATA</div>
+      <div class="medal g" id="medalG">OURO</div>
+    </div>
+    <div class="obj-check" id="resObjCheck"></div>
+    <div class="ctaRow" style="justify-content:center; margin-top:18px">
+      <button class="btn" id="resNext">Próxima fase</button>
+      <button class="btn ghost" id="resRetry">Rejogar</button>
+      <button class="btn ghost" id="resMap">Mapa-múndi</button>
+    </div>
+  </div>
+</section>
+
+<!-- =================== Game over =================== -->
+<section id="overScreen" class="overlay">
+  <div class="over-inner">
+    <div style="max-width:720px">
+      <div class="eyebrow"><span class="dot" style="background:var(--danger); box-shadow:0 0 12px var(--danger)"></span>Esgotamento emocional</div>
+      <h1 class="title">Você se esgotou.</h1>
+      <p class="lede" style="margin-left:auto; margin-right:auto">
+        Atravessar o ódio fingindo que não viu também custa caro: consome sua Resiliência.
+        Quando esgota, você recomeça. <strong>Na vida real, pedir ajuda é parte da estratégia.</strong>
+      </p>
+      <div class="ctaRow" style="justify-content:center">
+        <button class="btn" id="btnRetry">Recomeçar fase</button>
+        <button class="btn ghost" id="btnOverMap">Voltar ao mapa</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== Final / Victory =================== -->
+<section id="victoryScreen" class="overlay">
+  <div class="v-inner">
+    <div>
+      <div class="eyebrow"><span class="dot"></span>Espaço Digital restaurado</div>
+      <h1 class="title">O ódio foi <span class="accent">silenciado pela denúncia</span>.</h1>
+      <p class="lede">
+        Cada Nuvem virou Plataforma Solidária. Você desarmou três chefões e provou que
+        cyberbullying não se vence ignorando — se vence reconhecendo, guardando provas,
+        chamando a pessoa certa e usando os canais reais.
+      </p>
+      <div class="channels">
+        <div class="chan"><div class="nm">SaferNet Brasil</div><div class="ds">Denúncia anônima de crimes digitais.</div><div class="ph">new.safernet.org.br/denuncie</div></div>
+        <div class="chan"><div class="nm">Disque 100</div><div class="ds">Direitos Humanos. Violência contra crianças e adolescentes.</div><div class="ph">Ligue 100</div></div>
+        <div class="chan"><div class="nm">CVV — Valorização da Vida</div><div class="ds">Apoio emocional 24h, gratuito e sigiloso.</div><div class="ph">Ligue 188 · cvv.org.br</div></div>
+        <div class="chan"><div class="nm">Polícia Federal · Ciência</div><div class="ds">Canal para crimes cibernéticos (sextorsão, ameaça, exploração).</div><div class="ph">gov.br/pf — Cibernético</div></div>
+      </div>
+      <div class="ctaRow">
+        <button class="btn" id="btnFinalMap">Voltar ao mapa</button>
+        <button class="btn ghost" id="btnFinalArchive">Acervo de Provas</button>
+        <button class="btn ghost" id="btnFinalTitle">Tela inicial</button>
+      </div>
+    </div>
+    <div class="titleArt">
+      <div class="platG" style="left:8%; bottom:22%; width:28%"></div>
+      <div class="platG" style="left:46%; bottom:36%; width:18%"></div>
+      <div class="platG" style="left:66%; bottom:18%; width:24%"></div>
+      <div class="platG" style="left:14%; bottom:62%; width:20%"></div>
+      <div style="position:absolute; left:50%; bottom:62%; transform:translateX(-50%); font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.2em; color:var(--good)">AMBIENTE LIMPO</div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== Archive =================== -->
+<section id="archiveScreen" class="overlay">
+  <div class="archive-wrap">
+    <div>
+      <div class="eyebrow"><span class="dot"></span>Acervo de Provas</div>
+      <h1 class="title" style="font-size: 36px">Cada Print conta uma história.</h1>
+      <p class="lede" style="max-width:none">
+        Os prints que você coleta nas fases destravam conteúdos educativos sobre cyberbullying:
+        depoimentos, dados sobre o Brasil e trechos das leis. Quanto mais provas você guarda,
+        mais ferramentas você tem para se proteger e proteger outros.
+      </p>
+    </div>
+    <div class="archive-grid" id="archiveGrid"></div>
+    <div style="display:flex; justify-content:flex-end">
+      <button class="btn ghost" id="btnArchiveBack">Voltar ao mapa</button>
+    </div>
+  </div>
+</section>
+
+<!-- =================== How to play =================== -->
+<section id="howScreen" class="overlay">
+  <div class="modal-card">
+    <button class="btn ghost small close" id="btnHowClose">Fechar</button>
+    <div class="eyebrow"><span class="dot"></span>Como jogar</div>
+    <h2>Atravesse o Espaço Digital</h2>
+    <p>Você corre, pula e interage com elementos do Espaço Digital — postagens, comentários, perfis. Mas o ambiente está sob ataque de Nuvens de Toxicidade. Sua missão é restaurá-lo.</p>
+    <div class="grid2">
+      <div class="cell"><h4>Controles</h4>
+        <p><kbd>←</kbd> <kbd>→</kbd> ou <kbd>A</kbd> <kbd>D</kbd> — mover<br><kbd>Espaço</kbd> ou <kbd>W</kbd> — pular<br><kbd>E</kbd> — interagir com Nuvem, barreira ou nó do mapa<br><kbd>M</kbd> — mudo<br><kbd>Esc</kbd> — pausa / voltar ao mapa</p>
+      </div>
+      <div class="cell"><h4>HUD</h4>
+        <p><strong>Resiliência</strong>: barra emocional. Zera = você recomeça.<br><strong>Prints da fase</strong>: provas coletáveis.<br><strong>Acervo</strong>: total de provas guardadas.<br><strong>Mini-mapa</strong>: posição na fase.</p>
+      </div>
+      <div class="cell"><h4>Painel de Reparação</h4>
+        <p>Resolva o puzzle para transformar Nuvens em <strong>Plataformas Solidárias</strong>. Existem 6 tipos: Rede de Apoio, Frase, Lei, Ordem da Denúncia, Empatia e Reconstruir Mensagem.</p>
+      </div>
+      <div class="cell"><h4>Power-ups</h4>
+        <p><strong>Escudo de Empatia</strong>, <strong>Bloqueio Temporário</strong>, <strong>Aliado Temporário</strong>, <strong>Print Dourado</strong>. Aparecem nas fases — pegue ao tocar.</p>
+      </div>
+      <div class="cell"><h4>Inimigos</h4>
+        <p>Trolls, Bots de Spam, Perfis Fake e Haters Voadores. <strong>Não se neutraliza inimigo pisando nele</strong>: se neutraliza com puzzles, com Prints específicos ou denunciando.</p>
+      </div>
+      <div class="cell"><h4>Medalhas</h4>
+        <p><span style="color:var(--bronze)">Bronze</span>: cumpriu o objetivo principal.<br><span style="color:var(--silver)">Prata</span>: + segurou a Resiliência.<br><span style="color:var(--gold)">Ouro</span>: + coletou todos os Prints da fase.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== About cyberbullying =================== -->
+<section id="aboutScreen" class="overlay">
+  <div class="modal-card">
+    <button class="btn ghost small close" id="btnAboutClose">Fechar</button>
+    <div class="eyebrow"><span class="dot"></span>Sobre o cyberbullying</div>
+    <h2>O que é, por que importa</h2>
+    <p>Cyberbullying é a agressão repetida no ambiente digital — em redes sociais, chats e fóruns. Ele se espalha rápido e atinge a vítima 24h por dia. No Brasil, dados da UNICEF apontam que cerca de <strong>37% dos adolescentes</strong> já passaram por isso, e o TIC Kids Online Brasil mostra que <strong>1 em cada 5 crianças</strong> já vivenciou alguma forma de violência digital. Os impactos incluem ansiedade, depressão, queda de autoestima e abandono escolar.</p>
+    <div class="grid2">
+      <div class="cell"><h4>ECA · Estatuto da Criança e do Adolescente</h4>
+        <p>Garante proteção integral. Determina dever da família, sociedade e Estado em proteger crianças e adolescentes de qualquer forma de violência, inclusive a digital.</p>
+      </div>
+      <div class="cell"><h4>Lei 13.185/2015</h4>
+        <p>Instituiu o Programa de Combate à Intimidação Sistemática (bullying), incluindo o cyberbullying. Obriga escolas a prevenir, identificar e intervir.</p>
+      </div>
+      <div class="cell"><h4>Lei 14.811/2024</h4>
+        <p>Tornou crime hediondo a indução, instigação ou auxílio ao suicídio/automutilação contra crianças e adolescentes; criou medidas de proteção em ambiente escolar e digital.</p>
+      </div>
+      <div class="cell"><h4>Onde denunciar</h4>
+        <p>SaferNet (denúncia anônima), Disque 100 (Direitos Humanos), CVV 188 (apoio emocional), Conselho Tutelar local e Polícia Federal — canal Ciência (crimes cibernéticos).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+/* ============================================================
+   ECO DIGITAL v2 — JS
+   Modules: SAVE · AUDIO · CATALOG (puzzles, enemies, obstacles,
+   powerups, prints, levels) · ENGINE · MAP · PUZZLE · HUD · BOOT
+   ============================================================ */
+
+(() => {
+'use strict';
+
+/* ---------------------- Utility ------------------------ */
+const $ = sel => document.querySelector(sel);
+const $$ = sel => [...document.querySelectorAll(sel)];
+const clamp = (v,a,b)=> v<a?a:v>b?b:v;
+const overlap = (a,b)=> a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+const lerp = (a,b,t)=> a + (b-a)*t;
+
+/* ====================== SAVE ============================ */
+const SAVE = {
+  unlocked: {'1-1': true},
+  completed: {},                  // id -> {medals: 0..3, prints, bestRes}
+  totalPrints: 0,
+  collectedPrints: new Set(),     // global print ids
+  worldComplete: {1:false, 2:false, 3:false},
+  archiveSeen: new Set(),         // archive items unlocked
+  finalSeen: false,
+};
+function isUnlocked(id){ return !!SAVE.unlocked[id] }
+function isComplete(id){ return !!SAVE.completed[id] }
+function medalsFor(id){ return (SAVE.completed[id] && SAVE.completed[id].medals) || 0 }
+
+/* ====================== AUDIO =========================== */
+const AUDIO = (() => {
+  let ctx=null, muted=false, noiseNode=null, noiseGain=null;
+  const ensure = () => { if(!ctx){ try{ ctx = new (window.AudioContext||window.webkitAudioContext)() } catch(e){ ctx=null } } return ctx };
+  function tone({freq=440,dur=.12,type='sine',vol=.1,sweep=0,delay=0}){
+    const a=ensure(); if(!a||muted) return;
+    const t0=a.currentTime+delay; const o=a.createOscillator(); const g=a.createGain();
+    o.type=type; o.frequency.setValueAtTime(freq,t0);
+    if(sweep) o.frequency.linearRampToValueAtTime(freq+sweep,t0+dur);
+    g.gain.setValueAtTime(.0001,t0);
+    g.gain.exponentialRampToValueAtTime(vol,t0+.01);
+    g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
+    o.connect(g).connect(a.destination);
+    o.start(t0); o.stop(t0+dur+.02);
+  }
+  function notification(){ tone({freq:1320,dur:.06,type:'square',vol:.04,sweep:-200}); tone({freq:990,dur:.05,type:'square',vol:.03,delay:.08}) }
+  function startStatic(){
+    const a=ensure(); if(!a||noiseNode) return;
+    const buf=a.createBuffer(1,a.sampleRate*1,a.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*.25;
+    noiseNode=a.createBufferSource(); noiseNode.buffer=buf; noiseNode.loop=true;
+    noiseGain=a.createGain(); noiseGain.gain.value=.0001;
+    noiseNode.connect(noiseGain).connect(a.destination); noiseNode.start();
+  }
+  function setStatic(level){ const a=ensure(); if(!a||!noiseGain||muted) return; noiseGain.gain.linearRampToValueAtTime(Math.max(.0001,level),a.currentTime+.15) }
+  return {
+    ensure, startStatic, setStatic, notification,
+    damage(){ tone({freq:220,dur:.18,type:'sawtooth',vol:.12,sweep:-120}); tone({freq:110,dur:.22,type:'sawtooth',vol:.08,delay:.04,sweep:-60}) },
+    pickup(){ tone({freq:880,dur:.05,type:'triangle',vol:.08}); tone({freq:1320,dur:.06,type:'triangle',vol:.08,delay:.05}) },
+    gold(){ [880,1108,1318,1760].forEach((f,i)=>tone({freq:f,dur:.16,type:'triangle',vol:.08,delay:i*.05})) },
+    jump(){ tone({freq:520,dur:.07,type:'triangle',vol:.06,sweep:180}) },
+    solved(){ [523,659,784,1046].forEach((f,i)=>tone({freq:f,dur:.4,type:'triangle',vol:.06,delay:i*.06})) },
+    wrong(){ tone({freq:200,dur:.12,type:'square',vol:.08}) },
+    open(){ tone({freq:220,dur:.1,vol:.05}); tone({freq:330,dur:.1,vol:.05,delay:.05}) },
+    bossHit(){ tone({freq:90,dur:.25,type:'sawtooth',vol:.15,sweep:-40}); tone({freq:60,dur:.3,type:'square',vol:.08,delay:.06}) },
+    victory(){ [523,659,784,1046,1318].forEach((f,i)=>tone({freq:f,dur:.5,type:'triangle',vol:.06,delay:i*.1})) },
+    powerup(){ [659,784,988,1318].forEach((f,i)=>tone({freq:f,dur:.1,type:'sine',vol:.07,delay:i*.05})) },
+    shield(){ tone({freq:540,dur:.18,type:'sine',vol:.08}); tone({freq:720,dur:.18,type:'sine',vol:.08,delay:.08}) },
+    toggleMute(){ muted=!muted; if(muted&&noiseGain) noiseGain.gain.value=.0001; return muted },
+    get muted(){return muted}
+  };
+})();
+
+/* ====================== CATALOG: PRINTS / ARCHIVE ======== */
+// Each "print" is both a collectible in a level AND an unlockable archive card.
+const ARCHIVE = [
+  {id:'p1', title:'37% no Brasil', tag:'DADO · UNICEF',
+   body:'Cerca de 37% dos adolescentes brasileiros já sofreram cyberbullying segundo a UNICEF. Não é raro — é estatística pública.'},
+  {id:'p2', title:'1 em cada 5 crianças', tag:'DADO · TIC KIDS',
+   body:'O TIC Kids Online Brasil aponta que 1 em cada 5 crianças e adolescentes já passou por alguma forma de violência digital.'},
+  {id:'p3', title:'Crítica não é ataque', tag:'CONCEITO',
+   body:'Crítica fala de fato ("você atrasou três vezes"). Ataque fala da pessoa ("você é um lixo"). Os dois soam parecidos — separar é o primeiro passo.'},
+  {id:'p4', title:'Lei 13.185/2015', tag:'LEI',
+   body:'Programa de Combate à Intimidação Sistemática: define bullying e cyberbullying e obriga escolas a prevenir e intervir.'},
+  {id:'p5', title:'Print é prova', tag:'TÁTICA',
+   body:'Antes de bloquear, tire print da ofensa, com data e perfil visíveis. Sem prova, a denúncia perde força.'},
+  {id:'p6', title:'Não responda no ódio', tag:'TÁTICA',
+   body:'Responder a um ataque com outro alimenta a Nuvem. Bloqueie, guarde provas e leve para um adulto de confiança.'},
+  {id:'p7', title:'Lei 14.811/2024', tag:'LEI',
+   body:'Tornou hediondo o crime de induzir/auxiliar suicídio ou automutilação contra crianças e adolescentes, e reforçou a proteção em escolas e redes.'},
+  {id:'p8', title:'ECA', tag:'LEI',
+   body:'O Estatuto da Criança e do Adolescente garante proteção integral — inclusive online. Família, escola e Estado têm dever legal de agir.'},
+  {id:'p9', title:'Perfil fake é crime', tag:'CONCEITO',
+   body:'Criar perfil falso para humilhar ou ameaçar pode caracterizar falsa identidade, injúria, calúnia ou ameaça. Não é "só uma brincadeira".'},
+  {id:'p10', title:'Vazamento sem consentimento', tag:'CONCEITO',
+   body:'Compartilhar foto, áudio ou conversa íntima de alguém sem permissão é crime previsto na Lei Carolina Dieckmann e no ECA — e abre processo civil por danos.'},
+  {id:'p11', title:'Disque 100', tag:'CANAL',
+   body:'Direitos Humanos. Recebe denúncias de violência contra crianças e adolescentes — inclusive cyberbullying e sextorsão. Funciona 24h.'},
+  {id:'p12', title:'SaferNet', tag:'CANAL',
+   body:'Denúncia anônima de crimes na internet em new.safernet.org.br/denuncie. Também oferece canal de ajuda e orientação para vítimas.'},
+  {id:'p13', title:'CVV 188', tag:'CANAL',
+   body:'Centro de Valorização da Vida. Apoio emocional 24h, gratuito, sigiloso. Para você ou para alguém que precisa de escuta agora.'},
+  {id:'p14', title:'Polícia Federal · Ciência', tag:'CANAL',
+   body:'A PF mantém canal específico para crimes cibernéticos: sextorsão, ameaça, exploração sexual, vazamento. Procure gov.br/pf.'},
+  {id:'p15', title:'Rede de apoio', tag:'CONCEITO',
+   body:'Você não resolve sozinho. A ordem que funciona: vítima → testemunha → moderador da plataforma → responsável offline (família, escola, conselho tutelar).'},
+  {id:'p16', title:'Anonimato online não te protege', tag:'CONCEITO',
+   body:'Plataformas guardam IP, logs e metadados. Investigações cibernéticas identificam autores mesmo em fóruns anônimos quando há denúncia formal.'},
+  {id:'p17', title:'Sextorsão', tag:'ALERTA',
+   body:'Se alguém ameaça vazar foto íntima sua, NÃO pague, NÃO mande mais nada. Guarde provas, bloqueie e denuncie em SaferNet/PF imediatamente.'},
+  {id:'p18', title:'Depoimento · Beatriz, 14', tag:'HISTÓRIA',
+   body:'"Quando criaram um perfil zoando minha foto, eu queria sumir. Foi a coordenadora da escola que sentou comigo, tirou print de tudo e ligou para o conselho tutelar. Passou."'},
+  {id:'p19', title:'Empatia primeiro', tag:'CONCEITO',
+   body:'Antes de "tinha que fazer X", escute. "Eu acredito em você" e "isso não é culpa sua" pesam mais que qualquer estratégia.'},
+  {id:'p20', title:'Acionar adulto não é "X9"', tag:'CONCEITO',
+   body:'Pedir ajuda a um adulto de confiança não é dedurar — é estratégia. Ódio digital é grande demais para uma pessoa sozinha enfrentar.'},
+];
+
+function unlockArchive(id){
+  if (SAVE.archiveSeen.has(id)) return;
+  SAVE.archiveSeen.add(id);
+  toast(`Acervo desbloqueado: ${ARCHIVE.find(a=>a.id===id)?.title || id}`, 'good');
+}
+
+/* ====================== CATALOG: PUZZLES ================ */
+/*
+  Each puzzle kind: { build(host, ctx, onResult), check(state) }
+  ctx provides: data (kind-specific), id, world.
+  We expose: PUZZLES.kinds[k].build(...)
+*/
+const PHRASES_B = [
+  { situation:'No feed da turma:',
+    text:'Ninguém te aguenta nessa sala, vi seu nome na lista do trabalho.',
+    words:['Ninguém:a','te:a','aguenta:a','nessa:a','sala,:a','vi:f','seu:f','nome:f','na:f','lista:f','do:f','trabalho.:f']
+  },
+  { situation:'Um colega comenta:',
+    text:'Olha o nojento ali, tirou 7 na prova de matemática.',
+    words:['Olha:a','o:a','nojento:a','ali,:a','tirou:f','7:f','na:f','prova:f','de:f','matemática.:f']
+  },
+  { situation:'No story de uma colega:',
+    text:'Some daqui idiota, a foto que postou tem 12 curtidas.',
+    words:['Some:a','daqui:a','idiota,:a','a:f','foto:f','que:f','postou:f','tem:f','12:f','curtidas.:f']
+  },
+  { situation:'Em um grupo do WhatsApp:',
+    text:'Tá feia hoje hein, sua aula começa às 8.',
+    words:['Tá:a','feia:a','hoje:a','hein,:a','sua:f','aula:f','começa:f','às:f','8.:f']
+  },
+];
+
+const LEI_QS = [
+  { situation:'Em um grupo da turma, vazaram prints de uma conversa privada de uma colega sem o consentimento dela.',
+    options:[
+      {t:'Lei Carolina Dieckmann (Lei 12.737/2012)', d:'Trata da invasão de dispositivo informático e divulgação não autorizada de conteúdo privado.', ok:true},
+      {t:'Código de Defesa do Consumidor', d:'Relações de consumo entre fornecedor e cliente. Não trata diretamente de violência digital.', ok:false},
+      {t:'Lei Maria da Penha', d:'Violência doméstica e familiar contra a mulher. Pode se aplicar em casos específicos, mas não é a lei primária aqui.', ok:false},
+    ]},
+  { situation:'Numa escola, descobre-se que alunos têm humilhado outro aluno em comentários públicos. A escola não fez nada.',
+    options:[
+      {t:'Lei 13.185/2015', d:'Institui o Programa de Combate à Intimidação Sistemática e obriga escolas a prevenir e intervir.', ok:true},
+      {t:'Lei do Inquilinato', d:'Relações de locação. Sem relação com bullying escolar.', ok:false},
+      {t:'CLT', d:'Relações de trabalho. Não trata de proteção a crianças e adolescentes.', ok:false},
+    ]},
+  { situation:'Um adolescente está sendo ameaçado online: o agressor diz que vai vazar uma foto íntima se ele não enviar dinheiro.',
+    options:[
+      {t:'Lei 14.811/2024 + Código Penal', d:'A 14.811 reforça proteção a crianças/adolescentes. O Código Penal define extorsão (art. 158). É sextorsão — crime grave.', ok:true},
+      {t:'Lei de Trânsito', d:'Não tem relação com o caso.', ok:false},
+      {t:'Lei de Direito Autoral', d:'Protege obras intelectuais — não cobre ameaça/extorsão.', ok:false},
+    ]},
+  { situation:'Um colega de 13 anos sofre humilhação constante em vários apps. Os pais procuram ajuda.',
+    options:[
+      {t:'ECA · Estatuto da Criança e do Adolescente', d:'Garante proteção integral, inclusive online. Aciona conselho tutelar e medidas protetivas.', ok:true},
+      {t:'Código Comercial', d:'Trata de comércio. Sem aplicação.', ok:false},
+      {t:'Lei do Silêncio', d:'Não existe lei com esse nome em âmbito federal aplicada a este caso.', ok:false},
+    ]},
+];
+
+const ORDER_QS = [
+  { title:'Ordem da denúncia',
+    steps:[
+      {t:'Tirar print da ofensa', i:0},
+      {t:'Bloquear o agressor', i:1},
+      {t:'Denunciar dentro da plataforma', i:2},
+      {t:'Contar para um responsável (família/escola)', i:3},
+      {t:'Acionar canal externo (SaferNet, Disque 100, PF)', i:4},
+    ]},
+];
+
+const EMPATIA_QS = [
+  { situation:'Uma amiga te conta, chorando, que está sofrendo cyberbullying em um grupo.',
+    options:[
+      {t:'"Mas é só piada da internet, ignora."', d:'Minimiza o que ela sente. Cyberbullying não é piada.', ok:false, kind:'minimize'},
+      {t:'"Hmm, entendi. Quer ver isso depois?"', d:'Neutro, mas evasivo. Ela precisa de presença agora.', ok:false, kind:'neutral'},
+      {t:'"Eu acredito em você. Não é sua culpa. Vamos guardar prints e procurar alguém para te ajudar."', d:'Acolhe, valida e ainda aponta um caminho concreto.', ok:true, kind:'empathic'},
+    ]},
+  { situation:'Um colega da turma se isolou e parou de aparecer no chat depois de virar alvo de zoeira.',
+    options:[
+      {t:'"Para de drama, todo mundo já passou por isso."', d:'Compara e minimiza. Empurra a vítima ainda mais para o silêncio.', ok:false, kind:'minimize'},
+      {t:'"Se quiser conversar, tô aqui. Sem pressão, no seu tempo."', d:'Empático, sem invadir. Abre uma porta e respeita o ritmo dele.', ok:true, kind:'empathic'},
+      {t:'"Vou contar tudo na coordenação amanhã, deixa comigo."', d:'Bem intencionado, mas decide pelo outro. Pergunte antes.', ok:false, kind:'neutral'},
+    ]},
+];
+
+const MSG_RECON = [
+  { target:'Você não está sozinho, eu acredito em você.',
+    distractors:['sozinho','idiota','culpa']
+  },
+  { target:'Isso não é sua culpa, vamos pedir ajuda juntos.',
+    distractors:['drama','para','sempre']
+  },
+];
+
+/* ----- Puzzle builders ----- */
+const PUZZLES = {};
+
+// === A · Nós de Comunicação ===
+PUZZLES.A = {
+  title:'Conectar Nós de Comunicação',
+  sub:'Toque nos nós na ordem da rede de apoio: de quem é atingido(a) até quem responsabiliza.',
+  build(host, ctx, onResult){
+    const NODES = [
+      {role:'PESSOA ATINGIDA', who:'Vítima', desc:'Quem está sofrendo o ataque. Reconhecer é o primeiro passo.'},
+      {role:'QUEM VÊ', who:'Testemunha', desc:'Amigo, colega ou seguidor. Apoia e não espalha a ofensa.'},
+      {role:'NA PLATAFORMA', who:'Moderador', desc:'Equipe do app/rede. Recebe denúncia, remove conteúdo, bloqueia.'},
+      {role:'OFFLINE', who:'Responsável', desc:'Família, escola, conselho tutelar — agem na vida real e protegem.'},
+    ];
+    const ORDER = [0,1,2,3];
+    host.innerHTML = '';
+    const wrap = document.createElement('div'); wrap.className='nodes'; host.appendChild(wrap);
+    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.classList.add('wires'); svg.setAttribute('width','100%'); svg.setAttribute('height','100%');
+    wrap.appendChild(svg);
+    const positions = [{l:'6%',t:'14%'},{l:'56%',t:'10%'},{l:'8%',t:'58%'},{l:'56%',t:'60%'}];
+    const sh = [0,1,2,3].sort(()=>Math.random()-0.5);
+    let order=[];
+    NODES.forEach((n,i)=>{
+      const el=document.createElement('div'); el.className='node';
+      el.style.left=positions[sh.indexOf(i)].l; el.style.top=positions[sh.indexOf(i)].t;
+      el.dataset.idx=String(i);
+      el.innerHTML=`<div class="role">${n.role}</div><div class="who">${n.who}</div><div class="desc">${n.desc}</div><div class="num"></div>`;
+      el.addEventListener('click', ()=>{
+        if (order.includes(i)){
+          const at=order.indexOf(i);
+          order.splice(at).forEach(idx=>{
+            const n2=wrap.querySelector(`.node[data-idx="${idx}"]`);
+            n2.classList.remove('sel'); n2.querySelector('.num').textContent='';
+          });
+        } else {
+          order.push(i); el.classList.add('sel'); el.querySelector('.num').textContent=String(order.length);
+        }
+        drawWires(svg, wrap, order);
+        setStatus(`ORDEM ATUAL: ${order.length} / 4`);
+      });
+      wrap.appendChild(el);
+    });
+    PuzzleHost.onCheck(()=>{
+      if (order.length<4){ setStatus(`FALTAM ${4-order.length} NÓ(S)`,'bad'); AUDIO.wrong(); return; }
+      const ok = order.every((v,i)=> v===ORDER[i]);
+      if (ok){
+        setStatus('REDE DE APOIO COMPLETA','ok');
+        [...wrap.querySelectorAll('.node')].forEach(n=>n.classList.add('sel'));
+        setTimeout(()=>onResult(true, {perfect: true}), 600);
+      } else {
+        setStatus('ORDEM INCORRETA — TENTE NOVAMENTE','bad'); AUDIO.wrong();
+        for (let i=0;i<order.length;i++){
+          if (order[i]!==ORDER[i]){
+            const n = wrap.querySelector(`.node[data-idx="${order[i]}"]`);
+            if (n){ n.classList.remove('sel'); n.classList.add('bad'); setTimeout(()=>n.classList.remove('bad'),400) }
+          }
+        }
+        order=[]; [...wrap.querySelectorAll('.node')].forEach(n=>{n.classList.remove('sel'); n.querySelector('.num').textContent=''});
+        svg.innerHTML='';
+        onResult(false, {penalty: 6});
+      }
+    });
+    setStatus('ORDEM ATUAL: 0 / 4');
+  }
+};
+function drawWires(svg, wrap, order){
+  svg.innerHTML='';
+  const wr = wrap.getBoundingClientRect();
+  for (let i=0;i<order.length-1;i++){
+    const a=wrap.querySelector(`.node[data-idx="${order[i]}"]`).getBoundingClientRect();
+    const b=wrap.querySelector(`.node[data-idx="${order[i+1]}"]`).getBoundingClientRect();
+    const ln=document.createElementNS('http://www.w3.org/2000/svg','line');
+    ln.setAttribute('x1', a.left+a.width/2 - wr.left);
+    ln.setAttribute('y1', a.top+a.height/2 - wr.top);
+    ln.setAttribute('x2', b.left+b.width/2 - wr.left);
+    ln.setAttribute('y2', b.top+b.height/2 - wr.top);
+    ln.setAttribute('stroke','#67e8c5'); ln.setAttribute('stroke-width','2'); ln.setAttribute('stroke-dasharray','6 6'); ln.setAttribute('opacity','.85');
+    svg.appendChild(ln);
+  }
+}
+
+// === B · Frase ===
+PUZZLES.B = {
+  title:'Desconstruir a frase ofensiva',
+  sub:'Clique em cada palavra para alternar entre ATAQUE / FATO / neutro.',
+  build(host, ctx, onResult){
+    const phrase = PHRASES_B[ctx.data % PHRASES_B.length];
+    host.innerHTML='';
+    const wrap=document.createElement('div'); wrap.className='phrase-wrap';
+    const legend=document.createElement('div'); legend.className='legendRow';
+    legend.innerHTML=`<span class="legend"><span class="swatch a"></span>ATAQUE</span><span class="legend"><span class="swatch f"></span>FATO</span><span style="opacity:.6">·</span><span>Clique para alternar</span>`;
+    wrap.appendChild(legend);
+
+    if (phrase.situation){
+      const sit=document.createElement('div'); sit.className='situation';
+      sit.innerHTML=`<div class="tag">SITUAÇÃO</div><div class="text">${phrase.situation}</div>`;
+      wrap.appendChild(sit);
+    }
+
+    const phr=document.createElement('div'); phr.className='phrase';
+    phrase.words.forEach((w,i)=>{
+      const [t,cls] = w.split(':');
+      const sp=document.createElement('span'); sp.className='word'; sp.textContent=t;
+      sp.dataset.idx=String(i); sp.dataset.real = (cls==='a'?'ataque':'fato'); sp.dataset.state='neutral';
+      sp.addEventListener('click', ()=>{
+        const order=['neutral','ataque','fato'];
+        const nxt=order[(order.indexOf(sp.dataset.state)+1)%3];
+        sp.dataset.state=nxt; sp.classList.remove('ataque','fato','wrong');
+        if (nxt==='ataque') sp.classList.add('ataque'); else if (nxt==='fato') sp.classList.add('fato');
+      });
+      phr.appendChild(sp); phr.appendChild(document.createTextNode(' '));
+    });
+    wrap.appendChild(phr);
+
+    const tip=document.createElement('div'); tip.style.cssText='color:var(--ink-soft); font-size:13px; line-height:1.5';
+    tip.innerHTML='<strong>Por quê?</strong> Crítica fala de fato. Ataque fala da pessoa. Separar é tirar poder do xingamento.';
+    wrap.appendChild(tip);
+
+    host.appendChild(wrap);
+    setStatus('CLASSIFIQUE TODAS AS PALAVRAS');
+
+    PuzzleHost.onCheck(()=>{
+      const sps=[...host.querySelectorAll('.word')];
+      const neutral=sps.filter(s=>s.dataset.state==='neutral');
+      if (neutral.length){ setStatus(`FALTAM ${neutral.length} PALAVRA(S)`,'bad'); AUDIO.wrong(); return; }
+      let wrong=0;
+      sps.forEach(s=>{
+        if (s.dataset.state!==s.dataset.real){ wrong++; s.classList.add('wrong'); setTimeout(()=>s.classList.remove('wrong'),400) }
+      });
+      if (!wrong){ setStatus('FRASE DESARMADA','ok'); setTimeout(()=>onResult(true,{perfect:true}), 600); }
+      else { setStatus(`${wrong} ERRO(S) — REVISE`,'bad'); onResult(false, {penalty:6}) }
+    });
+  }
+};
+
+// === C · Lei ===
+PUZZLES.C = {
+  title:'Identificar a Lei',
+  sub:'Qual lei brasileira se aplica a esta situação?',
+  build(host, ctx, onResult){
+    const q = LEI_QS[ctx.data % LEI_QS.length];
+    host.innerHTML='';
+    const sit=document.createElement('div'); sit.className='situation';
+    sit.innerHTML=`<div class="tag">SITUAÇÃO</div><div class="text">${q.situation}</div>`;
+    host.appendChild(sit);
+    let sel=-1;
+    q.options.forEach((o,i)=>{
+      const b=document.createElement('button'); b.className='option';
+      b.innerHTML=`<div class="ot">${o.t}</div><div class="od">${o.d}</div>`;
+      b.addEventListener('click', ()=>{
+        sel=i;
+        [...host.querySelectorAll('.option')].forEach(x=>x.classList.remove('sel','bad'));
+        b.classList.add('sel');
+        setStatus('OPÇÃO ESCOLHIDA');
+      });
+      host.appendChild(b);
+    });
+    setStatus('ESCOLHA UMA OPÇÃO');
+    PuzzleHost.onCheck(()=>{
+      if (sel<0){ setStatus('NENHUMA OPÇÃO ESCOLHIDA','bad'); AUDIO.wrong(); return; }
+      const opt=q.options[sel];
+      if (opt.ok){ setStatus('LEI CORRETA','ok'); setTimeout(()=>onResult(true,{perfect:true}), 600); }
+      else {
+        const b=host.querySelectorAll('.option')[sel]; b.classList.remove('sel'); b.classList.add('bad');
+        setStatus('LEI INCORRETA — REVISE','bad'); AUDIO.wrong();
+        onResult(false,{penalty:6});
+      }
+    });
+  }
+};
+
+// === D · Ordem da Denúncia ===
+PUZZLES.D = {
+  title:'Ordem da denúncia',
+  sub:'Coloque os passos na ordem correta clicando em cada um na sequência.',
+  build(host, ctx, onResult){
+    const q = ORDER_QS[0];
+    host.innerHTML='';
+    const wrap=document.createElement('div'); wrap.className='steps';
+    // shuffle
+    const items = q.steps.slice().sort(()=>Math.random()-0.5);
+    let order=[];
+    items.forEach(s=>{
+      const el=document.createElement('div'); el.className='step'; el.dataset.i=String(s.i);
+      el.innerHTML=`<div class="num"></div><div class="label">${s.t}</div>`;
+      el.addEventListener('click', ()=>{
+        const idx = order.indexOf(s.i);
+        if (idx>=0){ order.splice(idx); refresh(); return; }
+        order.push(s.i); refresh();
+      });
+      wrap.appendChild(el);
+    });
+    host.appendChild(wrap);
+    function refresh(){
+      [...wrap.querySelectorAll('.step')].forEach(el=>{
+        const i = +el.dataset.i;
+        const pos = order.indexOf(i);
+        el.classList.toggle('sel', pos>=0);
+        el.querySelector('.num').textContent = pos>=0 ? String(pos+1) : '';
+      });
+      setStatus(`ORDEM ATUAL: ${order.length} / 5`);
+    }
+    setStatus('ORDEM ATUAL: 0 / 5');
+    PuzzleHost.onCheck(()=>{
+      if (order.length<5){ setStatus(`FALTAM ${5-order.length} PASSO(S)`,'bad'); AUDIO.wrong(); return; }
+      const ok = order.every((v,i)=>v===i);
+      if (ok){ setStatus('ORDEM CORRETA','ok'); setTimeout(()=>onResult(true,{perfect:true}),600); }
+      else {
+        // highlight first wrong
+        for (let k=0;k<order.length;k++){
+          if (order[k]!==k){
+            const el = wrap.querySelector(`.step[data-i="${order[k]}"]`); el.classList.add('bad'); setTimeout(()=>el.classList.remove('bad'),400);
+          }
+        }
+        setStatus('ORDEM INCORRETA','bad');
+        order=[]; refresh();
+        onResult(false,{penalty:6});
+      }
+    });
+  }
+};
+
+// === E · Empatia ===
+PUZZLES.E = {
+  title:'Empatia em diálogo',
+  sub:'Escolha a melhor resposta para acolher a pessoa.',
+  build(host, ctx, onResult){
+    const q = EMPATIA_QS[ctx.data % EMPATIA_QS.length];
+    host.innerHTML='';
+    const sit=document.createElement('div'); sit.className='situation';
+    sit.innerHTML=`<div class="tag">SITUAÇÃO</div><div class="text">${q.situation}</div>`;
+    host.appendChild(sit);
+    let sel=-1;
+    q.options.forEach((o,i)=>{
+      const b=document.createElement('button'); b.className='option';
+      b.innerHTML=`<div class="ot">${o.t}</div><div class="od">${o.d}</div>`;
+      b.addEventListener('click', ()=>{
+        sel=i;
+        [...host.querySelectorAll('.option')].forEach(x=>x.classList.remove('sel','bad'));
+        b.classList.add('sel');
+        setStatus('RESPOSTA ESCOLHIDA');
+      });
+      host.appendChild(b);
+    });
+    setStatus('ESCOLHA UMA RESPOSTA');
+    PuzzleHost.onCheck(()=>{
+      if (sel<0){ setStatus('NENHUMA RESPOSTA ESCOLHIDA','bad'); AUDIO.wrong(); return; }
+      if (q.options[sel].ok){ setStatus('ACOLHIMENTO REAL','ok'); setTimeout(()=>onResult(true,{perfect:true}),600); }
+      else {
+        const b=host.querySelectorAll('.option')[sel]; b.classList.remove('sel'); b.classList.add('bad');
+        setStatus('NÃO ACOLHE A VÍTIMA — TENTE OUTRA','bad'); AUDIO.wrong();
+        onResult(false,{penalty:6});
+      }
+    });
+  }
+};
+
+// === F · Reconstruir mensagem ===
+PUZZLES.F = {
+  title:'Reconstruir mensagem de apoio',
+  sub:'Monte uma mensagem positiva clicando nas palavras na ordem. Distratores (palavras ruins) precisam ficar de fora.',
+  build(host, ctx, onResult){
+    const q = MSG_RECON[ctx.data % MSG_RECON.length];
+    host.innerHTML='';
+    const wrap=document.createElement('div'); wrap.className='recon-wrap';
+    const target = document.createElement('div'); target.className='recon-target';
+    const bank = document.createElement('div'); bank.className='recon-bank';
+
+    const targetWords = q.target.split(/\s+/);
+    const allWords = targetWords.slice().concat(q.distractors).sort(()=>Math.random()-0.5);
+    let chosen=[]; // order of chosen tiles by id
+
+    function render(){
+      target.innerHTML='';
+      chosen.forEach((id,i)=>{
+        const t=document.createElement('span'); t.className='tile in-target'; t.textContent=allWords[id];
+        t.addEventListener('click', ()=>{
+          chosen.splice(i,1); render();
+        });
+        target.appendChild(t);
+      });
+      bank.innerHTML='';
+      allWords.forEach((w,i)=>{
+        if (chosen.includes(i)) return;
+        const t=document.createElement('span'); t.className='tile'; t.textContent=w;
+        t.addEventListener('click', ()=>{ chosen.push(i); render() });
+        bank.appendChild(t);
+      });
+      setStatus(`MONTANDO: ${chosen.length} / ${targetWords.length}`);
+    }
+    const lbl1=document.createElement('div'); lbl1.className='eyebrow'; lbl1.textContent='SUA MENSAGEM';
+    const lbl2=document.createElement('div'); lbl2.className='eyebrow'; lbl2.textContent='PALAVRAS DISPONÍVEIS';
+    wrap.appendChild(lbl1); wrap.appendChild(target);
+    wrap.appendChild(lbl2); wrap.appendChild(bank);
+    host.appendChild(wrap);
+    render();
+
+    PuzzleHost.onCheck(()=>{
+      const built = chosen.map(i=>allWords[i]).join(' ');
+      if (built === q.target){ setStatus('MENSAGEM RECONSTRUÍDA','ok'); setTimeout(()=>onResult(true,{perfect:true}),600); }
+      else { setStatus('AINDA NÃO COINCIDE — REORGANIZE','bad'); AUDIO.wrong(); onResult(false,{penalty:6}); }
+    });
+  }
+};
+
+/* ====================== CATALOG: ENEMIES =================== */
+/*
+  Enemies share a small interface:
+   - update(dt, world, player): mutate own state
+   - draw(ctx, t): render
+   - touch(player): called on overlap; return amount of resilience damage (or 0)
+   - canBeNeutralized: function (e.g. when player has gold or freeze active)
+*/
+function makeEnemy(spec){
+  const e = Object.assign({
+    x:0,y:0,w:36,h:36, vx:0,vy:0,
+    dead:false, frozen:0, neutralized:false,
+    seedX:0,
+    type:spec.type
+  }, spec);
+  e.seedX = e.x;
+  return e;
+}
+function updateEnemy(e, dt, world){
+  if (e.dead || e.neutralized){ return }
+  if (e.frozen>0){ e.frozen -= dt; return }
+  if (e.type==='troll'){
+    if (!e.dir) e.dir = 1;
+    e.x += e.dir * 90 * dt;
+    if (e.x > e.seedX + (e.range||180)) e.dir = -1;
+    if (e.x < e.seedX) e.dir = 1;
+  } else if (e.type==='bot'){
+    e.t = (e.t||0) + dt;
+    e.x = e.seedX + Math.sin(e.t*1.2) * (e.range||180);
+    e.y = (e.seedY||e.y) + Math.sin(e.t*2.4) * 30;
+    // emits notification icon every 1.6s
+    e.shoot = (e.shoot||0) + dt;
+    if (e.shoot > 1.6){
+      e.shoot = 0;
+      world.projectiles.push({x:e.x+18, y:e.y+18, vx: (world.player.x < e.x ? -180 : 180), vy: 40, life: 4});
+      AUDIO.notification();
+    }
+  } else if (e.type==='fake'){
+    // looks friendly; turns hostile when player approaches within 220px
+    const dx = world.player.x - e.x;
+    const d = Math.abs(dx);
+    if (!e.hostile && d < 220){ e.hostile = true; e.flashT = .4 }
+    if (e.flashT) e.flashT = Math.max(0, e.flashT - dt);
+    if (e.hostile){
+      // slow chase
+      e.x += (dx>0?1:-1) * 70 * dt;
+    }
+  } else if (e.type==='hater'){
+    // hovering chase across a band
+    e.t = (e.t||0) + dt;
+    const dx = world.player.x - e.x;
+    const dy = world.player.y - e.y - 40;
+    const dist = Math.hypot(dx,dy);
+    if (dist < (e.range||500) && !e.neutralized){
+      e.x += (dx/dist) * 80 * dt;
+      e.y += (dy/dist) * 80 * dt;
+    } else {
+      // patrol
+      e.x = e.seedX + Math.sin(e.t) * 90;
+    }
+  }
+}
+function drawEnemy(g, e, t){
+  if (e.dead) return;
+  g.save();
+  if (e.neutralized){
+    // gentle ghost
+    g.globalAlpha = .35;
+  }
+  if (e.frozen>0){
+    g.fillStyle='rgba(180,210,255,.15)';
+    g.beginPath(); g.arc(e.x+18, e.y+18, 30, 0, Math.PI*2); g.fill();
+  }
+  if (e.type==='troll'){
+    // angry red square with mustache-mouth
+    g.fillStyle='#3a1a26'; roundRect(g, e.x+2,e.y+4,36,32,8); g.fill();
+    g.fillStyle = e.neutralized ? '#67e8c5' : '#ff5d6c';
+    roundRect(g, e.x,e.y,36,32,8); g.fill();
+    g.fillStyle='#1a1224';
+    g.fillRect(e.x+8, e.y+10, 5,5); g.fillRect(e.x+23, e.y+10, 5,5);
+    g.fillRect(e.x+10, e.y+22, 16,3);
+    g.fillStyle='#1a1224'; g.fillRect(e.x+6, e.y-2, 24, 4); // angry brow
+  } else if (e.type==='bot'){
+    // diamond bot
+    g.save();
+    g.translate(e.x+18, e.y+18);
+    g.rotate(Math.PI/4);
+    g.fillStyle = e.neutralized ? '#67e8c5' : '#c93b8a';
+    g.fillRect(-16,-16,32,32);
+    g.fillStyle='#1a1224';
+    g.fillRect(-8,-2,16,4);
+    g.restore();
+    // antenna
+    g.fillStyle='rgba(255,255,255,.6)'; g.fillRect(e.x+17, e.y-8, 2, 8);
+    g.fillStyle='#c93b8a'; g.beginPath(); g.arc(e.x+18, e.y-10, 3, 0, Math.PI*2); g.fill();
+  } else if (e.type==='fake'){
+    const hostile = e.hostile;
+    g.fillStyle = hostile ? (e.flashT? '#ff5d6c':'#c93b8a') : '#67e8c5';
+    roundRect(g, e.x, e.y, 36, 40, 10); g.fill();
+    // smile or frown
+    g.fillStyle='#0a1a15';
+    g.fillRect(e.x+10, e.y+12, 4,4); g.fillRect(e.x+22, e.y+12, 4,4);
+    g.beginPath();
+    if (!hostile){
+      g.arc(e.x+18, e.y+26, 8, 0, Math.PI);
+    } else {
+      g.arc(e.x+18, e.y+30, 8, Math.PI, Math.PI*2);
+    }
+    g.lineWidth=2; g.strokeStyle='#0a1a15'; g.stroke();
+    if (!hostile){
+      g.fillStyle='rgba(255,255,255,.7)'; g.font='9px ui-monospace, monospace';
+      g.fillText('OI?', e.x+8, e.y-6);
+    } else {
+      g.fillStyle='#ff5d6c'; g.font='bold 11px ui-monospace, monospace';
+      g.fillText('FAKE!', e.x+1, e.y-6);
+    }
+  } else if (e.type==='hater'){
+    // hovering cloud-shaped enemy
+    g.fillStyle = e.neutralized ? '#67e8c5' : '#6c1e6a';
+    roundRect(g, e.x, e.y, 44, 32, 14); g.fill();
+    g.fillStyle = e.neutralized ? '#9af2d3' : '#c93b8a';
+    roundRect(g, e.x+4, e.y+4, 36, 16, 8); g.fill();
+    // eyes
+    g.fillStyle='#1a1224';
+    g.fillRect(e.x+12, e.y+10, 4,4); g.fillRect(e.x+28, e.y+10, 4,4);
+    if (!e.neutralized){
+      // hate emoji
+      g.fillStyle='#ff5d6c'; g.font='bold 10px ui-monospace, monospace';
+      g.fillText('>:(', e.x+12, e.y+28);
+    }
+  }
+  g.restore();
+}
+
+/* ====================== CATALOG: POWER-UPS =================== */
+const POWERUPS = {
+  shield: {label:'Escudo de Empatia', dur: 0, color:'#9af2d3', desc:'Absorve 1 ataque sem perder Resiliência.'},
+  freeze: {label:'Bloqueio Temporário', dur: 5, color:'#7cc7ff', desc:'Congela inimigos por 5s.'},
+  ally:   {label:'Aliado Temporário',  dur:10, color:'#f0a05a', desc:'NPC segue você e atrai inimigos por 10s.'},
+  gold:   {label:'Print Dourado',      dur: 0, color:'#f6c64a', desc:'Vale 5 prints normais.'},
+};
+
+function drawPowerup(g, p, t){
+  const cx=p.x+10, cy=p.y+10 + Math.sin(t/300 + p.x)*4;
+  // halo
+  const gr=g.createRadialGradient(cx,cy,0,cx,cy,28);
+  gr.addColorStop(0, hexA(POWERUPS[p.type].color, .35));
+  gr.addColorStop(1, hexA(POWERUPS[p.type].color, 0));
+  g.fillStyle=gr; g.beginPath(); g.arc(cx,cy,28,0,Math.PI*2); g.fill();
+  // body
+  g.save(); g.translate(cx,cy); g.rotate(Math.sin(t/400 + p.x)*.2);
+  if (p.type==='shield'){
+    g.fillStyle=POWERUPS.shield.color;
+    g.beginPath(); g.moveTo(0,-12); g.lineTo(11,-6); g.lineTo(8,10); g.lineTo(0,14); g.lineTo(-8,10); g.lineTo(-11,-6); g.closePath(); g.fill();
+    g.fillStyle='#0a1a15'; g.font='bold 11px ui-monospace, monospace'; g.textAlign='center'; g.fillText('♡',0,3); g.textAlign='left';
+  } else if (p.type==='freeze'){
+    g.fillStyle=POWERUPS.freeze.color;
+    for (let i=0;i<6;i++){
+      g.save(); g.rotate(i*Math.PI/3); g.fillRect(-1.5,-12,3,24); g.restore();
+    }
+    g.fillStyle='#0a1a15'; g.beginPath(); g.arc(0,0,3,0,Math.PI*2); g.fill();
+  } else if (p.type==='ally'){
+    g.fillStyle=POWERUPS.ally.color; roundRect(g,-10,-12,20,24,6); g.fill();
+    g.fillStyle='#1a1224'; g.fillRect(-5,-5,3,3); g.fillRect(2,-5,3,3); g.fillRect(-4,2,8,2);
+  } else if (p.type==='gold'){
+    g.fillStyle=POWERUPS.gold.color; roundRect(g,-11,-11,22,22,4); g.fill();
+    g.fillStyle='#1a1224'; g.font='bold 11px ui-monospace, monospace'; g.textAlign='center'; g.fillText('★',0,4); g.textAlign='left';
+  }
+  g.restore();
+}
+
+function hexA(hex, a){
+  const h=hex.replace('#',''); const n=parseInt(h.length===3? h.split('').map(c=>c+c).join('') : h, 16);
+  const r=(n>>16)&255, gg=(n>>8)&255, b=n&255;
+  return `rgba(${r},${gg},${b},${a})`;
+}
+
+/* ---- Utility: rounded rect on context (used by everything) ---- */
+function roundRect(g, x, y, w, h, r){
+  g.beginPath();
+  g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r);
+  g.closePath();
+}
+
+/* ====================== CATALOG: LEVELS =================== */
+/*
+  Level config:
+   id (e.g. '1-2'), world, name, desc, theme ('feed'|'chat'|'forum'|'boss-feed'..),
+   width, spawn:[x,y], floor (default 820),
+   ground: [[x,y,w], ...]  (solid ground slabs)
+   platforms: [[x,y,w],...] (floating posts)
+   clouds: [{x,y,w,h,pz,data}]  pz: A|B|C|D|E|F
+   enemies: [{type,x,y,range,data,...}]
+   obstacles: [{type,...}]
+   prints: [{x,y, archive:'p3'}]  (or [[x,y,'p3'], ...])
+   powerups: [{type,x,y}]
+   goalX: end x
+   objectives: {puzzles:N, prints:N, dontLoseRes:true, timeLimit:0}
+   boss: optional {kind, hp, attacks, ...}
+*/
+const FLOOR = 820;
+function P(x,y,w){return [x,y,w]}
+
+const LEVELS = [
+  // ============ MUNDO 1 — REDE SOCIAL PÚBLICA (FEED) ============
+  {
+    id:'1-1', world:1, name:'Comentários Tóxicos', theme:'feed',
+    desc:'Sua primeira passagem pelo Espaço Digital. Conheça as Nuvens e o Painel de Reparação.',
+    width:4400, spawn:[100, 740],
+    ground:[ P(0,FLOOR,700), P(820,FLOOR,520), P(1480,FLOOR,460), P(2080,FLOOR,600), P(2820,FLOOR,520), P(3460,FLOOR,940) ],
+    platforms:[ P(420,640,160), P(700,540,140), P(960,500,160), P(1240,440,160), P(1560,560,160), P(1840,500,160), P(2200,480,140), P(2400,380,160), P(2660,480,160), P(2980,540,160), P(3220,460,140), P(3500,540,160), P(3760,460,140), P(4040,500,160) ],
+    clouds:[
+      {x:720, y:FLOOR-140, w:110, h:130, pz:'A'},
+      {x:1380, y:FLOOR-180, w:110, h:160, pz:'B', data:0},
+    ],
+    enemies:[
+      {type:'troll', x:900, y:FLOOR-44, w:36, h:36, range:160},
+      {type:'troll', x:2300, y:FLOOR-44, w:36, h:36, range:140},
+    ],
+    obstacles:[],
+    prints:[ [320,FLOOR-60,'p3'], [760,580,'p5'], [1300,420,'p15'] ],
+    powerups:[],
+    goalX: 4280,
+    objectives:{ puzzles:2, prints:3, dontLoseRes:true, timeLimit:0 }
+  },
+  {
+    id:'1-2', world:1, name:'Compartilhamento em Massa', theme:'feed',
+    desc:'As Nuvens se multiplicam quando viralizam. Tem barreira de glitch agora.',
+    width:4800, spawn:[100,740],
+    ground:[ P(0,FLOOR,800), P(900,FLOOR,400), P(1400,FLOOR,500), P(2000,FLOOR,500), P(2600,FLOOR,500), P(3200,FLOOR,500), P(3800,FLOOR,1000) ],
+    platforms:[ P(400,640,160), P(700,520,160), P(1000,500,160), P(1320,420,160), P(1600,540,160), P(1900,460,160), P(2200,400,160), P(2480,500,160), P(2780,420,160), P(3060,520,160), P(3340,440,160), P(3640,520,160), P(3960,460,160), P(4280,540,160) ],
+    clouds:[
+      {x:1080, y:FLOOR-150, w:110, h:140, pz:'B', data:1},
+      {x:2300, y:FLOOR-170, w:110, h:160, pz:'C', data:0},
+      {x:3380, y:FLOOR-150, w:110, h:140, pz:'A'},
+    ],
+    enemies:[
+      {type:'troll', x:1500, y:FLOOR-44, w:36, h:36, range:160},
+      {type:'bot', x:1800, y:300, w:36, h:36, range:200, seedY:300},
+      {type:'troll', x:2900, y:FLOOR-44, w:36, h:36, range:160},
+    ],
+    obstacles:[
+      {type:'glitch', x:2580, y:FLOOR-220, w:60, h:220, key:'c1'},  // unlocked when cloud index 1 solved
+    ],
+    prints:[ [320,FLOOR-60,'p4'], [1150,460,'p6'], [2120,360,'p1'], [3540,400,'p2'] ],
+    powerups:[ {type:'shield', x:920, y:FLOOR-60} ],
+    goalX: 4660,
+    objectives:{ puzzles:3, prints:4, dontLoseRes:true, timeLimit:0 }
+  },
+  {
+    id:'1-3', world:1, name:'Viralização', theme:'feed',
+    desc:'Plataformas instáveis caem se você demora. Tempo limite. Mantenha o ritmo.',
+    width:5000, spawn:[100,740],
+    ground:[ P(0,FLOOR,700), P(800,FLOOR,400), P(1300,FLOOR,400), P(1800,FLOOR,400), P(2300,FLOOR,400), P(2800,FLOOR,400), P(3300,FLOOR,400), P(3800,FLOOR,1200) ],
+    platforms:[ P(360,640,140) ],
+    clouds:[
+      {x:1500, y:FLOOR-160, w:110, h:150, pz:'B', data:2},
+      {x:2500, y:FLOOR-160, w:110, h:150, pz:'D', data:0},
+      {x:3500, y:FLOOR-160, w:110, h:150, pz:'E', data:0},
+    ],
+    enemies:[
+      {type:'bot', x:900, y:420, w:36, h:36, range:160, seedY:420},
+      {type:'bot', x:2100, y:380, w:36, h:36, range:200, seedY:380},
+      {type:'troll', x:3300, y:FLOOR-44, w:36, h:36, range:140},
+    ],
+    obstacles:[
+      // unstable platforms that fall when stood on
+      {type:'unstable', x:700, y:620, w:140},
+      {type:'unstable', x:1180, y:540, w:140},
+      {type:'unstable', x:1680, y:460, w:140},
+      {type:'unstable', x:2180, y:540, w:140},
+      {type:'unstable', x:2680, y:460, w:140},
+      {type:'unstable', x:3180, y:540, w:140},
+    ],
+    prints:[ [320,FLOOR-60,'p18'], [1240,500,'p3'], [2240,500,'p5'], [3240,500,'p15'] ],
+    powerups:[ {type:'freeze', x:1300, y:FLOOR-60} ],
+    goalX: 4700,
+    objectives:{ puzzles:3, prints:4, dontLoseRes:true, timeLimit:90 }
+  },
+  // ===== BOSS 1: Perfil Fake =====
+  {
+    id:'1-B', world:1, name:'Chefão · O Perfil Fake', theme:'boss-feed', isBoss:true,
+    desc:'Um perfil falso dispara ofensas. Esquive, junte provas, finalize com o Painel.',
+    width:2200, spawn:[100,740],
+    ground:[ P(0,FLOOR,2200) ],
+    platforms:[ P(300,640,160), P(560,540,160), P(820,640,160), P(1080,540,160), P(1340,640,160), P(1600,540,160) ],
+    clouds:[ {x:1900, y:FLOOR-200, w:130, h:180, pz:'C', data:1, bossFinal:true} ],
+    enemies:[],
+    obstacles:[],
+    prints:[ [200,FLOOR-60,'p9'], [620,500,'p5'], [1140,500,'p11'] ],
+    powerups:[ {type:'shield', x:900, y:FLOOR-60}, {type:'freeze', x:1400, y:FLOOR-60} ],
+    goalX: 2100,
+    objectives:{ puzzles:1, prints:3, dontLoseRes:false, timeLimit:0 },
+    boss:{ kind:'fake', hp:3, name:'O Perfil Fake' }
+  },
+
+  // ============ MUNDO 2 — GRUPO DE MENSAGENS (CHAT) ============
+  {
+    id:'2-1', world:2, name:'Apelidos Cruéis', theme:'chat',
+    desc:'Cada Nuvem é uma frase específica. Desconstrua antes que ela contamine o grupo.',
+    width:4600, spawn:[100,740],
+    ground:[ P(0,FLOOR,700), P(820,FLOOR,500), P(1440,FLOOR,500), P(2060,FLOOR,500), P(2680,FLOOR,500), P(3300,FLOOR,1300) ],
+    platforms:[ P(400,640,160), P(700,520,160), P(1000,440,160), P(1300,540,160), P(1620,460,160), P(1920,540,160), P(2240,460,160), P(2560,540,160), P(2900,460,160), P(3220,540,160), P(3520,460,160), P(3840,540,160), P(4140,460,160) ],
+    clouds:[
+      {x:1080, y:FLOOR-150, w:110, h:140, pz:'B', data:3},
+      {x:2140, y:FLOOR-170, w:110, h:160, pz:'B', data:0},
+      {x:3060, y:FLOOR-150, w:110, h:140, pz:'A'},
+    ],
+    enemies:[
+      {type:'fake', x:900, y:FLOOR-44, w:36, h:40, range:0},
+      {type:'troll', x:1700, y:FLOOR-44, w:36, h:36, range:160},
+      {type:'bot', x:2400, y:360, w:36, h:36, range:160, seedY:360},
+    ],
+    obstacles:[
+      {type:'falling', x:1500, period:1.6, width: 250},
+    ],
+    prints:[ [320,FLOOR-60,'p9'], [1180,400,'p10'], [2240,400,'p6'], [3000,460,'p19'] ],
+    powerups:[ {type:'shield', x:680, y:FLOOR-60} ],
+    goalX: 4480,
+    objectives:{ puzzles:3, prints:4, dontLoseRes:true, timeLimit:0 }
+  },
+  {
+    id:'2-2', world:2, name:'Exclusão do Grupo', theme:'chat',
+    desc:'Plataformas somem se você demora — assim como um grupo te exclui sem aviso.',
+    width:4800, spawn:[100,740],
+    ground:[ P(0,FLOOR,600), P(720,FLOOR,400), P(1220,FLOOR,400), P(1720,FLOOR,400), P(2220,FLOOR,400), P(2720,FLOOR,400), P(3220,FLOOR,400), P(3720,FLOOR,1100) ],
+    platforms:[ P(320,640,140) ],
+    clouds:[
+      {x:1400, y:FLOOR-160, w:110, h:150, pz:'E', data:1},
+      {x:2400, y:FLOOR-160, w:110, h:150, pz:'F', data:0},
+      {x:3400, y:FLOOR-160, w:110, h:150, pz:'D', data:0},
+    ],
+    enemies:[
+      {type:'fake', x:1900, y:FLOOR-44, w:36, h:40},
+      {type:'hater', x:2900, y:360, w:44, h:32, range:500},
+    ],
+    obstacles:[
+      {type:'unstable', x:640, y:620, w:160},
+      {type:'unstable', x:1140, y:540, w:160},
+      {type:'unstable', x:1640, y:460, w:160},
+      {type:'unstable', x:2140, y:540, w:160},
+      {type:'unstable', x:2640, y:460, w:160},
+      {type:'unstable', x:3140, y:540, w:160},
+      {type:'silence', x:2000, y:200, w:600, h:300},
+    ],
+    prints:[ [240,FLOOR-60,'p19'], [1240,500,'p20'], [2400,420,'p15'], [3500,420,'p13'] ],
+    powerups:[ {type:'ally', x:760, y:FLOOR-60} ],
+    goalX: 4600,
+    objectives:{ puzzles:3, prints:4, dontLoseRes:true, timeLimit:75 }
+  },
+  {
+    id:'2-3', world:2, name:'Prints Vazados', theme:'chat',
+    desc:'A privacidade alheia também é sua responsabilidade.',
+    width:5000, spawn:[100,740],
+    ground:[ P(0,FLOOR,700), P(820,FLOOR,500), P(1440,FLOOR,500), P(2060,FLOOR,500), P(2680,FLOOR,500), P(3300,FLOOR,500), P(3920,FLOOR,1080) ],
+    platforms:[ P(400,640,160), P(700,520,160), P(1000,440,160), P(1300,540,160), P(1620,460,160), P(1920,400,160), P(2240,500,160), P(2560,420,160), P(2880,540,160), P(3200,460,160), P(3520,540,160), P(3840,460,160), P(4160,540,160), P(4480,460,160) ],
+    clouds:[
+      {x:1080, y:FLOOR-150, w:110, h:140, pz:'C', data:0},
+      {x:2120, y:FLOOR-170, w:110, h:160, pz:'F', data:1},
+      {x:3060, y:FLOOR-150, w:110, h:140, pz:'D', data:0},
+      {x:3960, y:FLOOR-150, w:110, h:140, pz:'B', data:1},
+    ],
+    enemies:[
+      {type:'bot', x:1500, y:380, w:36, h:36, range:180, seedY:380},
+      {type:'hater', x:2600, y:320, w:44, h:32, range:480},
+      {type:'fake', x:3380, y:FLOOR-44, w:36, h:40},
+    ],
+    obstacles:[
+      {type:'glitch', x:2540, y:FLOOR-220, w:60, h:220, key:'c1'},
+    ],
+    prints:[ [320,FLOOR-60,'p10'], [1240,400,'p9'], [2280,360,'p17'], [3220,400,'p7'], [4080,500,'p11'] ],
+    powerups:[ {type:'gold', x:1700, y:FLOOR-60} ],
+    goalX: 4880,
+    objectives:{ puzzles:4, prints:5, dontLoseRes:true, timeLimit:0 }
+  },
+  // ===== BOSS 2: Administrador Omisso =====
+  {
+    id:'2-B', world:2, name:'Chefão · Administrador Omisso', theme:'boss-chat', isBoss:true,
+    desc:'O admin do grupo não modera. Junte prints e force o sistema a agir.',
+    width:2400, spawn:[100,740],
+    ground:[ P(0,FLOOR,2400) ],
+    platforms:[ P(300,640,160), P(560,540,160), P(820,640,160), P(1080,540,160), P(1340,640,160), P(1600,540,160), P(1860,640,160) ],
+    clouds:[ {x:2080, y:FLOOR-200, w:130, h:180, pz:'D', data:0, bossFinal:true} ],
+    enemies:[],
+    obstacles:[
+      {type:'silence', x:600, y:200, w:600, h:300},
+    ],
+    prints:[ [200,FLOOR-60,'p5'], [600,500,'p11'], [1100,500,'p12'], [1700,500,'p14'] ],
+    powerups:[ {type:'freeze', x:900, y:FLOOR-60}, {type:'shield', x:1400, y:FLOOR-60} ],
+    goalX: 2300,
+    objectives:{ puzzles:1, prints:4, dontLoseRes:false, timeLimit:0 },
+    boss:{ kind:'admin', hp:4, name:'Administrador Omisso' }
+  },
+
+  // ============ MUNDO 3 — FÓRUM ANÔNIMO ============
+  {
+    id:'3-1', world:3, name:'Anonimato Tóxico', theme:'forum',
+    desc:'Inimigos invisíveis só revelam ao coletar Prints próximos.',
+    width:4800, spawn:[100,740],
+    ground:[ P(0,FLOOR,700), P(820,FLOOR,500), P(1440,FLOOR,500), P(2060,FLOOR,500), P(2680,FLOOR,500), P(3300,FLOOR,500), P(3920,FLOOR,880) ],
+    platforms:[ P(400,640,160), P(700,520,160), P(1000,440,160), P(1300,540,160), P(1620,460,160), P(1920,540,160), P(2240,460,160), P(2560,540,160), P(2900,460,160), P(3220,540,160), P(3520,460,160), P(3840,540,160), P(4140,460,160) ],
+    clouds:[
+      {x:1080, y:FLOOR-150, w:110, h:140, pz:'A'},
+      {x:2140, y:FLOOR-170, w:110, h:160, pz:'C', data:2},
+      {x:3060, y:FLOOR-150, w:110, h:140, pz:'F', data:0},
+    ],
+    enemies:[
+      {type:'hater', x:1500, y:360, w:44, h:32, range:520, invisibleUntil:'print'},
+      {type:'hater', x:2600, y:320, w:44, h:32, range:520, invisibleUntil:'print'},
+      {type:'fake', x:3380, y:FLOOR-44, w:36, h:40},
+    ],
+    obstacles:[
+      {type:'mirror', x:1700, w:600},
+    ],
+    prints:[ [320,FLOOR-60,'p16'], [1240,400,'p9'], [2240,400,'p3'], [3140,460,'p6'] ],
+    powerups:[ {type:'shield', x:700, y:FLOOR-60}, {type:'freeze', x:2400, y:FLOOR-60} ],
+    goalX: 4680,
+    objectives:{ puzzles:3, prints:4, dontLoseRes:true, timeLimit:0 }
+  },
+  {
+    id:'3-2', world:3, name:'Discurso de Ódio', theme:'forum',
+    desc:'Nuvens maiores, puzzles mais densos. Empatia importa.',
+    width:5000, spawn:[100,740],
+    ground:[ P(0,FLOOR,700), P(820,FLOOR,500), P(1440,FLOOR,500), P(2060,FLOOR,500), P(2680,FLOOR,500), P(3300,FLOOR,500), P(3920,FLOOR,1080) ],
+    platforms:[ P(400,640,160), P(700,520,160), P(1000,440,160), P(1300,540,160), P(1620,460,160), P(1920,400,160), P(2240,500,160), P(2560,420,160), P(2880,540,160), P(3200,460,160), P(3520,540,160), P(3840,460,160), P(4160,540,160), P(4480,460,160) ],
+    clouds:[
+      {x:1080, y:FLOOR-180, w:130, h:170, pz:'E', data:0},
+      {x:2120, y:FLOOR-200, w:130, h:190, pz:'B', data:2},
+      {x:3060, y:FLOOR-180, w:130, h:170, pz:'A'},
+      {x:3960, y:FLOOR-200, w:130, h:190, pz:'D', data:0},
+    ],
+    enemies:[
+      {type:'troll', x:1500, y:FLOOR-44, w:36, h:36, range:200},
+      {type:'hater', x:2600, y:320, w:44, h:32, range:520},
+      {type:'fake', x:3380, y:FLOOR-44, w:36, h:40},
+      {type:'bot', x:4200, y:380, w:36, h:36, range:180, seedY:380},
+    ],
+    obstacles:[
+      {type:'silence', x:1900, y:200, w:500, h:300},
+      {type:'falling', x:2800, period:1.6, width:300},
+    ],
+    prints:[ [320,FLOOR-60,'p4'], [1240,400,'p19'], [2280,360,'p2'], [3220,400,'p7'], [4080,500,'p20'] ],
+    powerups:[ {type:'ally', x:1500, y:FLOOR-60}, {type:'gold', x:3700, y:FLOOR-60} ],
+    goalX: 4880,
+    objectives:{ puzzles:4, prints:5, dontLoseRes:true, timeLimit:0 }
+  },
+  {
+    id:'3-3', world:3, name:'Sextorsão e Ameaças', theme:'forum',
+    desc:'A Lei 14.811/2024 protege contra os crimes mais graves. Aprenda a identificar.',
+    width:5200, spawn:[100,740],
+    ground:[ P(0,FLOOR,700), P(820,FLOOR,500), P(1440,FLOOR,500), P(2060,FLOOR,500), P(2680,FLOOR,500), P(3300,FLOOR,500), P(3920,FLOOR,500), P(4540,FLOOR,660) ],
+    platforms:[ P(400,640,160), P(700,520,160), P(1000,440,160), P(1300,540,160), P(1620,460,160), P(1920,400,160), P(2240,500,160), P(2560,420,160), P(2880,540,160), P(3200,460,160), P(3520,540,160), P(3840,460,160), P(4160,540,160), P(4460,460,160), P(4760,540,160) ],
+    clouds:[
+      {x:1080, y:FLOOR-180, w:130, h:170, pz:'C', data:2},
+      {x:2120, y:FLOOR-200, w:130, h:190, pz:'D', data:0},
+      {x:3060, y:FLOOR-180, w:130, h:170, pz:'E', data:1},
+      {x:3960, y:FLOOR-200, w:130, h:190, pz:'F', data:1},
+    ],
+    enemies:[
+      {type:'troll', x:1500, y:FLOOR-44, w:36, h:36, range:200},
+      {type:'hater', x:2600, y:320, w:44, h:32, range:520, invisibleUntil:'print'},
+      {type:'fake', x:3380, y:FLOOR-44, w:36, h:40},
+      {type:'hater', x:4200, y:340, w:44, h:32, range:540, invisibleUntil:'print'},
+    ],
+    obstacles:[
+      {type:'silence', x:1500, y:200, w:400, h:400},
+      {type:'falling', x:3000, period:1.4, width:300},
+      {type:'glitch', x:4400, y:FLOOR-220, w:60, h:220, key:'c3'},
+    ],
+    prints:[ [320,FLOOR-60,'p7'], [1240,400,'p17'], [2280,360,'p14'], [3220,400,'p11'], [4080,500,'p13'], [4660,500,'p8'] ],
+    powerups:[ {type:'shield', x:800, y:FLOOR-60}, {type:'gold', x:3200, y:FLOOR-60} ],
+    goalX: 5080,
+    objectives:{ puzzles:4, prints:6, dontLoseRes:true, timeLimit:0 }
+  },
+  // ===== BOSS 3: Hater Coletivo =====
+  {
+    id:'3-B', world:3, name:'Chefão · O Hater Coletivo', theme:'boss-forum', isBoss:true,
+    desc:'Muitas Nuvens fundidas. Esquive, junte provas, encerre com denúncia formal.',
+    width:2600, spawn:[100,740],
+    ground:[ P(0,FLOOR,2600) ],
+    platforms:[ P(300,640,160), P(560,540,160), P(820,640,160), P(1080,540,160), P(1340,640,160), P(1600,540,160), P(1860,640,160), P(2120,540,160) ],
+    clouds:[ {x:2300, y:FLOOR-220, w:140, h:200, pz:'C', data:2, bossFinal:true} ],
+    enemies:[],
+    obstacles:[],
+    prints:[ [200,FLOOR-60,'p7'], [600,500,'p11'], [1100,500,'p12'], [1500,500,'p13'], [1900,500,'p14'] ],
+    powerups:[ {type:'shield', x:700, y:FLOOR-60}, {type:'freeze', x:1300, y:FLOOR-60}, {type:'ally', x:1700, y:FLOOR-60} ],
+    goalX: 2500,
+    objectives:{ puzzles:1, prints:5, dontLoseRes:false, timeLimit:0 },
+    boss:{ kind:'hater', hp:5, name:'O Hater Coletivo' }
+  },
+];
+
+const LEVEL_BY_ID = Object.fromEntries(LEVELS.map(l=>[l.id, l]));
+const WORLDS = [
+  { id:1, name:'Rede Social Pública', theme:'feed',  short:'FEED',  desc:'Posts, comentários e compartilhamentos.', levels:['1-1','1-2','1-3','1-B'] },
+  { id:2, name:'Grupo de Mensagens',  theme:'chat',  short:'CHAT',  desc:'Conversas privadas, apelidos, exclusão.',   levels:['2-1','2-2','2-3','2-B'] },
+  { id:3, name:'Fórum Anônimo',       theme:'forum', short:'FÓRUM', desc:'Anonimato, discurso de ódio, ameaças.',     levels:['3-1','3-2','3-3','3-B'] },
+];
+
+/* ===== When a level is completed, unlock next ===== */
+function onLevelCompleted(id){
+  const idx = LEVELS.findIndex(l=>l.id===id);
+  if (idx<0) return;
+  const next = LEVELS[idx+1];
+  if (next) SAVE.unlocked[next.id] = true;
+
+  // when a world's boss is completed, mark world complete
+  const lvl = LEVEL_BY_ID[id];
+  if (lvl.isBoss){
+    SAVE.worldComplete[lvl.world] = true;
+  }
+
+  // if final boss completed, mark final
+  if (id==='3-B'){ SAVE.finalSeen = true }
+}
+
+/* ====================== ENGINE ============================ */
+const canvas = $('#game');
+const gctx = canvas.getContext('2d');
+const VW = 1600, VH = 900;
+function fitCanvas(){
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  canvas.width  = Math.floor(rect.width * dpr);
+  canvas.height = Math.floor(rect.height * dpr);
+}
+window.addEventListener('resize', fitCanvas);
+setTimeout(fitCanvas, 0);
+function applyTransform(){
+  const sx = canvas.width / VW;
+  const sy = canvas.height / VH;
+  gctx.setTransform(sx, 0, 0, sy, 0, 0);
+}
+
+/* === Game state machine === */
+const SCREEN = { TITLE:'title', MAP:'map', INTRO:'intro', PLAY:'play', PUZZLE:'puzzle', RESULT:'result', OVER:'over', WIN:'win', ARCHIVE:'archive', HOW:'how', ABOUT:'about' };
+const G = {
+  screen: SCREEN.TITLE,
+  keys: new Set(),
+  last: 0,
+  // Map state
+  map:{ avatarX:140, avatarY:VH-220, walking:false, walkTo:null, currentNodeId:'1-1' },
+  // Level state (built when starting)
+  L: null,
+};
+
+/* === Build level runtime from config === */
+function buildLevelRuntime(cfg){
+  const L = {
+    cfg,
+    width: cfg.width,
+    camX: 0,
+    res: 100,
+    time: 0,                  // elapsed
+    timeLeft: cfg.objectives.timeLimit || 0,
+    puzzlesSolved: 0,
+    printsGot: 0,             // including gold ×5
+    printsCount: cfg.prints.length,
+    keys: G.keys,
+    player: { x: cfg.spawn[0], y: cfg.spawn[1], w:36, h:56, vx:0, vy:0, onGround:false, facing:1, runT:0, hitFlash:0, mirrored:false },
+    platforms: [],
+    clouds: cfg.clouds.map((c,i)=>({...c, id:i+1, solved:false, glitch:Math.random()})),
+    enemies: cfg.enemies.map(e=>makeEnemy(e)),
+    obstacles: cfg.obstacles.map(o=>({...o, broken:false, t:0, removed:false})),
+    prints: cfg.prints.map((p,i)=>({x:p[0], y:p[1], w:22, h:22, got:false, archive:p[2], id:`${cfg.id}_p${i}`})),
+    powerups: cfg.powerups.map(p=>({...p, taken:false, w:22, h:22})),
+    projectiles: [],
+    fallers: [],            // falling comment boxes
+    ally: null,             // {x,y, t}
+    powerActive: null,      // {type, until}
+    shielded: false,
+    notifTimer: 0,
+    goal: { x: cfg.goalX, y: FLOOR - 160, w: 60, h: 160 },
+    glitchT: 0,
+    boss: null,             // set if cfg.boss
+    onFinish: null,         // callback
+    started: false,
+  };
+  // ground/platforms as collision rects
+  cfg.ground.forEach(([x,y,w])=> L.platforms.push({x, y, w, h: 80, kind:'ground'}));
+  cfg.platforms.forEach(([x,y,w])=> L.platforms.push({x, y, w, h: 22, kind:'post'}));
+
+  // obstacles that act as colliders (unstable/glitch)
+  L.obstacles.forEach(o=>{
+    if (o.type==='unstable'){ o.h=18; o.fall=0; o.platRef = {x:o.x, y:o.y, w:o.w, h:18, kind:'unstable', obs:o }; L.platforms.push(o.platRef); }
+    if (o.type==='glitch'){ o.platRef = {x:o.x, y:o.y, w:o.w, h:o.h, kind:'glitch', obs:o }; L.platforms.push(o.platRef); }
+  });
+
+  // boss setup
+  if (cfg.boss){
+    L.boss = makeBoss(cfg.boss);
+  }
+  return L;
+}
+
+function makeBoss(spec){
+  return {
+    kind: spec.kind, name: spec.name,
+    hp: spec.hp, maxHp: spec.hp,
+    phase: 1,           // 1: dodge, 2: collect, 3: puzzle final
+    x: 1900, y: 250, w: 180, h: 200,
+    t: 0, fireT: 0,
+    spawnedFinal: false,
+  };
+}
+
+/* === Start a level === */
+function startLevel(id){
+  const cfg = LEVEL_BY_ID[id]; if (!cfg) return;
+  G.L = buildLevelRuntime(cfg);
+  AUDIO.ensure(); AUDIO.startStatic();
+  showScreen(SCREEN.INTRO);
+  // populate intro
+  $('#introTag').textContent = `${cfg.isBoss?'CHEFÃO · ':''}MUNDO ${cfg.world} · ${cfg.name.toUpperCase()}`;
+  $('#introTitle').textContent = cfg.name;
+  $('#introDesc').textContent = cfg.desc;
+  const o = cfg.objectives;
+  const objs = [
+    {l:'CHEGAR AO FIM', t:'Atravesse a fase', d:'Alcance a saída no fim do nível.'},
+    {l:'PUZZLES', t:`Resolver ${o.puzzles} puzzle(s)`, d:'Cada Nuvem desarmada conta.'},
+    {l:'PRINTS · OURO', t:`Coletar ${o.prints} prints`, d:'Prova vira conteúdo do Acervo.'},
+    o.timeLimit ? {l:'TEMPO', t:`Limite: ${o.timeLimit}s`, d:'Mantenha o ritmo — fofocas viralizam.'} : null,
+    o.dontLoseRes ? {l:'PRATA', t:'Não esgotar a Resiliência', d:'Use empatia e estratégia.'} : null,
+  ].filter(Boolean);
+  $('#introObjs').innerHTML = objs.map(o=>`<div class="obj-card"><div class="o-l">${o.l}</div><div class="o-t">${o.t}</div><div class="o-d">${o.d}</div></div>`).join('');
+}
+
+function actuallyStart(){
+  G.L.started = true;
+  G.screen = SCREEN.PLAY;
+  hideAllOverlays();
+  G.last = performance.now();
+  updateHUD();
+}
+
+/* === Update loop === */
+function loop(t){
+  const dt = Math.min(0.033, (t - G.last)/1000 || 0);
+  G.last = t;
+  if (G.screen === SCREEN.PLAY) updatePlay(dt);
+  else if (G.screen === SCREEN.MAP) updateMap(dt);
+  render();
+  requestAnimationFrame(loop);
+}
+
+function updatePlay(dt){
+  const L = G.L; if (!L) return;
+  const p = L.player;
+  L.time += dt;
+  if (L.timeLeft > 0){
+    L.timeLeft -= dt;
+    if (L.timeLeft <= 0){
+      L.timeLeft = 0;
+      damageRes(100); // time-out
+      return;
+    }
+  }
+  // input
+  let ax=0;
+  if (G.keys.has('left')) ax -= 1;
+  if (G.keys.has('right')) ax += 1;
+  if (L.player.mirrored) ax = -ax;
+  p.vx = ax * 360;
+  if (ax) p.facing = ax;
+  if (G.keys.has('jump') && p.onGround){
+    p.vy = -820; p.onGround = false; AUDIO.jump();
+  }
+  p.vy += 1600 * dt; if (p.vy > 1200) p.vy = 1200;
+  // integrate
+  p.x += p.vx * dt; resolveX(L);
+  p.y += p.vy * dt; p.onGround=false; resolveY(L);
+
+  // bounds
+  if (p.x < 0) p.x = 0;
+  if (p.x + p.w > L.width) p.x = L.width - p.w;
+  if (p.y > VH + 200){
+    damageRes(35);
+    p.x = L.cfg.spawn[0]; p.y = L.cfg.spawn[1]; p.vx=0; p.vy=0;
+  }
+
+  // run anim
+  if (p.onGround && Math.abs(p.vx)>10) p.runT += dt*14; else p.runT *= 0.9;
+
+  // camera
+  const camTarget = clamp(p.x - VW*0.4, 0, L.width - VW);
+  L.camX += (camTarget - L.camX) * Math.min(1, dt*6);
+
+  // obstacles update
+  L.obstacles.forEach(o=>{
+    if (o.type==='unstable' && o.platRef && !o.broken){
+      // if player is standing on it, start countdown
+      const r=o.platRef;
+      const onTop = p.onGround && Math.abs((p.y+p.h) - r.y) < 2 && p.x+p.w > r.x && p.x < r.x+r.w;
+      if (onTop){
+        o.t += dt;
+        if (o.t > 0.4){
+          // shake
+          r.x = (o.x || r.x);
+          o.shake = (o.shake||0) + dt;
+        }
+        if (o.t > 1.8){
+          o.broken = true;
+          // remove from collision
+          const idx = L.platforms.indexOf(r); if (idx>=0) L.platforms.splice(idx,1);
+          o.fall = 1;
+        }
+      }
+      if (o.broken){
+        o.fallY = (o.fallY||r.y);
+        o.fallY += 600 * dt;
+        if (o.fallY > VH+80) o.removed = true;
+      }
+    }
+    if (o.type==='glitch'){
+      if (o.broken && o.platRef){
+        const idx=L.platforms.indexOf(o.platRef); if (idx>=0) L.platforms.splice(idx,1);
+        o.platRef=null;
+      }
+    }
+    if (o.type==='falling'){
+      o.t = (o.t||0) + dt;
+      if (o.t > (o.period||1.6)){
+        o.t = 0;
+        const x = o.x + (Math.random()*o.width|0);
+        L.fallers.push({x, y:-30, vy:0, w:30, h:30, life:6});
+      }
+    }
+    if (o.type==='silence'){
+      // damage if player inside zone, no audio cue
+      const r = {x:o.x, y:o.y, w:o.w, h:o.h};
+      if (overlap(p, r)) damageRes(15*dt);
+    }
+    if (o.type==='mirror'){
+      const inZone = p.x+p.w/2 > o.x && p.x+p.w/2 < o.x + o.w;
+      if (inZone && !p.mirrored){ p.mirrored = true; $('#mirrorFx').classList.add('on'); }
+      if (!inZone && p.mirrored){ p.mirrored = false; $('#mirrorFx').classList.remove('on'); }
+    }
+  });
+
+  // remove dead obstacles
+  L.obstacles = L.obstacles.filter(o => !o.removed);
+  // fallers
+  L.fallers.forEach(f=>{
+    f.vy += 1500 * dt;
+    f.y += f.vy * dt;
+    f.life -= dt;
+    if (overlap(p, f)){
+      damageRes(25);
+      f.life = 0;
+    }
+  });
+  L.fallers = L.fallers.filter(f => f.life > 0 && f.y < VH+40);
+
+  // projectiles
+  L.projectiles.forEach(pr=>{
+    pr.x += pr.vx * dt; pr.y += pr.vy * dt; pr.life -= dt;
+    if (overlap(p, {x:pr.x-8, y:pr.y-8, w:16, h:16})){
+      damageRes(20); pr.life = 0;
+    }
+  });
+  L.projectiles = L.projectiles.filter(pr => pr.life > 0 && pr.x > L.camX-100 && pr.x < L.camX+VW+100);
+
+  // enemies update
+  L.enemies.forEach(e=>{
+    if (e.dead) return;
+    updateEnemy(e, dt, { player: p, projectiles: L.projectiles });
+    // invisible until print collected
+    if (e.invisibleUntil && !e.revealed){
+      const targetPrint = L.prints.find(pr=>pr.got); // simple: any print collected makes one print of haters near reveal
+      // Actually reveal when player picks up any print within range
+      const nearestPrint = L.prints.find(pr => !pr.got && Math.hypot((pr.x-e.x),(pr.y-e.y)) < 200);
+      if (!nearestPrint){
+        // no nearby print; if a print near it was already collected, reveal
+        e.revealed = true;
+      }
+    }
+    if (overlap(p, e) && !e.neutralized){
+      // shielded?
+      if (L.shielded){
+        L.shielded = false; updateHUD();
+        AUDIO.shield(); toast('Escudo de Empatia absorveu o ataque', 'good');
+      } else {
+        damageRes(35);
+        // bounce
+        p.vx = (p.x < e.x ? -240 : 240); p.vy = -300;
+      }
+    }
+  });
+
+  // pickups: prints
+  L.prints.forEach(pr=>{
+    if (pr.got) return;
+    if (overlap(p, {x:pr.x-2, y:pr.y-2, w:pr.w+4, h:pr.h+4})){
+      pr.got = true;
+      L.printsGot += 1;
+      // also unlock archive entry
+      if (pr.archive){
+        if (!SAVE.collectedPrints.has(pr.id)){
+          SAVE.collectedPrints.add(pr.id);
+          SAVE.totalPrints += 1;
+          unlockArchive(pr.archive);
+        }
+      }
+      AUDIO.pickup();
+      toast('+1 Print de Segurança', 'good');
+      updateHUD();
+    }
+  });
+
+  // powerups
+  L.powerups.forEach(pu=>{
+    if (pu.taken) return;
+    if (overlap(p, {x:pu.x-2, y:pu.y-2, w:pu.w+4, h:pu.h+4})){
+      pu.taken = true; AUDIO.powerup();
+      applyPowerup(pu.type, L);
+    }
+  });
+
+  // active powerup countdown
+  if (L.powerActive){
+    L.powerActive.t -= dt;
+    if (L.powerActive.t <= 0){
+      L.powerActive = null;
+      updateHUD();
+    } else {
+      // every 0.25s update label
+      L.powerActive.lastUpd = (L.powerActive.lastUpd||0) + dt;
+      if (L.powerActive.lastUpd > .25){ L.powerActive.lastUpd = 0; updateHUD(); }
+    }
+  }
+  // ally follow
+  if (L.ally){
+    const dx = p.x - L.ally.x, dy = p.y - L.ally.y;
+    L.ally.x += dx * Math.min(1, dt*3);
+    L.ally.y += dy * Math.min(1, dt*3);
+    L.ally.t -= dt;
+    if (L.ally.t <= 0) L.ally = null;
+    else {
+      // ally attracts enemies (set their target temporarily)
+      L.enemies.forEach(e=>{
+        if (e.type==='hater'){
+          // overwrite chase target reference by drawing them toward ally
+          const ddx = L.ally.x - e.x, ddy = L.ally.y - e.y;
+          const d = Math.hypot(ddx,ddy);
+          if (d>0){
+            e.x += (ddx/d) * 70 * dt;
+            e.y += (ddy/d) * 70 * dt;
+          }
+        }
+      });
+    }
+  }
+
+  // proximity to toxic cloud (not solved)
+  let near=null, nearest=Infinity;
+  L.clouds.forEach(c=>{
+    if (c.solved) return;
+    const cx=c.x+c.w/2, cy=c.y+c.h/2;
+    const px=p.x+p.w/2, py=p.y+p.h/2;
+    const d=Math.hypot(px-cx,py-cy);
+    if (overlap(p,c)) damageRes(40*dt);
+    if (d<150 && d<nearest){ nearest=d; near=c; }
+  });
+
+  // also barrier interaction (glitch barrier)
+  let nearGlitch = null;
+  L.obstacles.forEach(o=>{
+    if (o.type==='glitch' && !o.broken && o.platRef){
+      const dx = (o.platRef.x+o.platRef.w/2) - (p.x+p.w/2);
+      const dy = (o.platRef.y+o.platRef.h/2) - (p.y+p.h/2);
+      if (Math.hypot(dx,dy) < 120) nearGlitch = o;
+    }
+  });
+
+  // boss update
+  if (L.boss){ updateBoss(L, dt); }
+
+  L.nearCloud = near;
+  L.nearGlitch = nearGlitch;
+  const hint = $('#hint');
+  if (near){
+    hint.innerHTML = `Pressione <kbd>E</kbd> · Painel de Reparação · Nuvem ${String(near.id).padStart(2,'0')}`;
+    hint.classList.add('show');
+  } else if (nearGlitch){
+    hint.innerHTML = `Pressione <kbd>E</kbd> · Resolver puzzle para abrir a barreira de glitch`;
+    hint.classList.add('show');
+  } else {
+    hint.classList.remove('show');
+  }
+
+  // toxic ambient
+  let closest=Infinity;
+  L.clouds.forEach(c=>{ if (c.solved) return; const dx=(c.x+c.w/2)-(p.x+p.w/2), dy=(c.y+c.h/2)-(p.y+p.h/2); closest=Math.min(closest, Math.hypot(dx,dy)); });
+  const intensity = closest===Infinity? 0 : clamp(1 - closest/700, 0, 1);
+  // silence zone overrides
+  let inSilence = false;
+  L.obstacles.forEach(o=>{ if (o.type==='silence' && overlap(p, {x:o.x,y:o.y,w:o.w,h:o.h})) inSilence=true });
+  AUDIO.setStatic(inSilence? 0 : intensity*0.06);
+  L.notifTimer += dt * (0.4 + intensity*1.4);
+  if (!inSilence && L.notifTimer > 1.6){ L.notifTimer = 0; if (intensity > .15) AUDIO.notification(); }
+
+  L.glitchT += dt;
+  if (p.hitFlash > 0) p.hitFlash -= dt;
+
+  // reach goal
+  if (overlap(p, L.goal)){
+    if (!L.cfg.isBoss){
+      // require all clouds solved? we say "encouraged not forced"; but require at least objective puzzles
+      finishLevel();
+    } else if (L.boss && L.boss.defeated){
+      finishLevel();
+    } else if (!L.boss){
+      finishLevel();
+    }
+  }
+  // update HUD minimap & timer
+  updateHUD();
+}
+
+function resolveX(L){
+  const p = L.player;
+  for (const pl of L.platforms){
+    if (!overlap(p, pl)) continue;
+    if (p.vx > 0) p.x = pl.x - p.w;
+    else if (p.vx < 0) p.x = pl.x + pl.w;
+    p.vx = 0;
+  }
+  // solidária platforms
+  for (const c of L.clouds){
+    if (!c.solved) continue;
+    const r = solvedRect(c);
+    if (!overlap(p, r)) continue;
+    if (p.vx > 0) p.x = r.x - p.w;
+    else if (p.vx < 0) p.x = r.x + r.w;
+    p.vx = 0;
+  }
+}
+function resolveY(L){
+  const p = L.player;
+  for (const pl of L.platforms){
+    if (!overlap(p, pl)) continue;
+    if (p.vy > 0){ p.y = pl.y - p.h; p.onGround = true; }
+    else if (p.vy < 0){ p.y = pl.y + pl.h; }
+    p.vy = 0;
+  }
+  for (const c of L.clouds){
+    if (!c.solved) continue;
+    const r = solvedRect(c);
+    if (!overlap(p, r)) continue;
+    if (p.vy > 0){ p.y = r.y - p.h; p.onGround = true; }
+    else if (p.vy < 0){ p.y = r.y + r.h; }
+    p.vy = 0;
+  }
+}
+function solvedRect(c){ return { x: c.x - 10, y: c.y + c.h - 22, w: c.w + 20, h: 22 }; }
+
+function damageRes(amt){
+  if (G.screen !== SCREEN.PLAY) return;
+  const L = G.L; if (!L) return;
+  if (L.shielded && amt > 1){
+    L.shielded = false; updateHUD(); AUDIO.shield();
+    toast('Escudo de Empatia absorveu', 'good');
+    return;
+  }
+  L.res = Math.max(0, L.res - amt);
+  if (amt > 1){
+    AUDIO.damage();
+    L.player.hitFlash = .35;
+    $('#flash').classList.add('on');
+    clearTimeout(damageRes._to);
+    damageRes._to = setTimeout(()=>$('#flash').classList.remove('on'), 140);
+  }
+  if (L.res <= 0){ gameOver() }
+  updateHUD();
+}
+function applyPowerup(type, L){
+  if (type === 'shield'){ L.shielded = true; toast('Escudo de Empatia ativo', 'good'); updateHUD(); }
+  else if (type === 'freeze'){
+    L.enemies.forEach(e=>e.frozen = 5);
+    L.powerActive = { type:'freeze', t: 5 };
+    toast('Inimigos congelados por 5s', 'good');
+    updateHUD();
+  } else if (type === 'ally'){
+    L.ally = { x: L.player.x, y: L.player.y - 20, t: 10 };
+    L.powerActive = { type:'ally', t: 10 };
+    toast('Aliado Temporário ativo', 'good');
+    updateHUD();
+  } else if (type === 'gold'){
+    L.printsGot += 5;
+    AUDIO.gold();
+    toast('Print Dourado · +5 prints', 'good');
+    updateHUD();
+  }
+}
+
+/* === Interact (E) === */
+function tryInteract(){
+  if (G.screen !== SCREEN.PLAY) return;
+  const L = G.L; if (!L) return;
+  if (L.nearCloud){ openPuzzleFor(L.nearCloud); return; }
+  if (L.nearGlitch){
+    // open a quick puzzle to break the barrier (use type D by default)
+    openPuzzleFor({ pz:'D', data:0, glitchRef: L.nearGlitch, id: 9 });
+    return;
+  }
+}
+
+/* === Cloud → puzzle === */
+function openPuzzleFor(c){
+  G.screen = SCREEN.PUZZLE;
+  AUDIO.open();
+  const kind = c.pz;
+  const def = PUZZLES[kind];
+  $('#pzTag').textContent = c.bossFinal ? 'PAINEL DE REPARAÇÃO · DENÚNCIA FORMAL' : `PAINEL DE REPARAÇÃO · NUVEM ${String(c.id).padStart(2,'0')}`;
+  $('#pzTitle').textContent = def.title;
+  $('#pzSub').textContent = def.sub;
+  $('#puzzleScreen').classList.add('show');
+  PuzzleHost._check = null;
+  def.build($('#pzBody'), { data: c.data||0, id: c.id, world: G.L.cfg.world }, (success, info)=>{
+    if (success){
+      AUDIO.solved();
+      $('#puzzleScreen').classList.remove('show');
+      G.screen = SCREEN.PLAY;
+      G.last = performance.now();
+      // mark solved
+      if (c.glitchRef){
+        c.glitchRef.broken = true;
+        toast('Barreira de glitch desfeita', 'good');
+      } else {
+        c.solved = true;
+        G.L.puzzlesSolved += 1;
+        toast('Plataforma Solidária criada', 'good');
+        // boss final?
+        if (c.bossFinal && G.L.boss){
+          G.L.boss.defeated = true;
+          AUDIO.victory();
+          toast(`${G.L.boss.name} foi silenciado pela denúncia`, 'good');
+        }
+      }
+      updateHUD();
+    } else {
+      // wrong attempt — penalty (resilience cost)
+      if (info && info.penalty){ damageRes(info.penalty) }
+    }
+  });
+}
+
+const PuzzleHost = {
+  _check: null,
+  onCheck(fn){ this._check = fn; }
+};
+function setStatus(t, kind){
+  const el = $('#pzStatus');
+  el.textContent = t;
+  el.className = 'status' + (kind? ' '+kind : '');
+}
+$('#pzCheck').addEventListener('click', ()=>{ if (PuzzleHost._check) PuzzleHost._check() });
+$('#pzCancel').addEventListener('click', ()=>{
+  $('#puzzleScreen').classList.remove('show');
+  G.screen = SCREEN.PLAY; G.last = performance.now();
+});
+
+/* === Boss update === */
+function updateBoss(L, dt){
+  const b = L.boss; const p = L.player;
+  if (b.defeated) return;
+  b.t += dt;
+  // floating
+  b.y = 220 + Math.sin(b.t*1.3) * 30;
+  // X anchor near end of arena
+  b.x = lerp(b.x, L.width - 320, dt*1.5);
+  // phase logic
+  if (b.phase === 1){
+    // dodge: fire projectiles
+    b.fireT += dt;
+    if (b.fireT > 1.0){
+      b.fireT = 0;
+      // 3 projectiles spread
+      for (let i=-1;i<=1;i++){
+        L.projectiles.push({ x: b.x+40, y: b.y + 100, vx: -220 + i*20, vy: 60 + i*40, life: 5 });
+      }
+      AUDIO.notification();
+    }
+    if (L.time > 8) b.phase = 2;
+  } else if (b.phase === 2){
+    // collect
+    b.fireT += dt;
+    if (b.fireT > 1.6){
+      b.fireT = 0;
+      for (let i=-1;i<=1;i+=2){
+        L.projectiles.push({ x: b.x+40, y: b.y + 100, vx: -180, vy: 80 * i, life: 5 });
+      }
+    }
+    if (L.printsGot >= L.cfg.objectives.prints){ b.phase = 3; }
+  } else if (b.phase === 3){
+    // spawn the final cloud (already in level) and stop firing aggressively
+  }
+}
+
+/* === HUD === */
+function updateHUD(){
+  const L = G.L;
+  // resilience
+  if (L){
+    const bar = $('#resBar');
+    bar.firstElementChild.style.width = L.res + '%';
+    bar.classList.toggle('low', L.res < 35);
+    bar.classList.toggle('shielded', !!L.shielded);
+    $('#printCount').textContent = String(L.printsGot);
+    $('#printTotal').textContent = String(L.printsCount);
+  }
+  $('#totalPrints').textContent = String(SAVE.totalPrints);
+
+  // timer
+  const tEl = $('#timer'); const tv = $('#timerVal');
+  if (L && L.cfg.objectives.timeLimit){
+    tEl.style.display = '';
+    tv.textContent = Math.ceil(L.timeLeft) + 's';
+    tEl.classList.toggle('warn', L.timeLeft < 15);
+  } else { tEl.style.display = 'none' }
+
+  // power active
+  const pa = $('#powerActive');
+  if (L && L.powerActive){
+    pa.classList.add('show');
+    $('#powerLabel').textContent = POWERUPS[L.powerActive.type].label;
+    $('#powerSecs').textContent = Math.ceil(L.powerActive.t);
+  } else { pa.classList.remove('show') }
+
+  // mini-map
+  const mm = $('#mmTrack');
+  if (L){
+    // remove old dynamic dots (keep .mi-goal)
+    [...mm.querySelectorAll('.mi-player, .mi-cloud')].forEach(n=>n.remove());
+    const playerEl = document.createElement('span'); playerEl.className='mi-player';
+    playerEl.style.left = (L.player.x / L.width * 100) + '%';
+    mm.appendChild(playerEl);
+    L.clouds.forEach(c=>{
+      const el = document.createElement('span'); el.className = 'mi-cloud' + (c.solved? ' solved':'');
+      el.style.left = (c.x / L.width * 100) + '%';
+      mm.appendChild(el);
+    });
+  }
+}
+
+/* === Toast === */
+function toast(msg, kind){
+  const el = $('#toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + (kind||'');
+  clearTimeout(toast._to);
+  toast._to = setTimeout(()=>el.className='toast', 1300);
+}
+
+/* ====================== RENDER ============================ */
+function render(){
+  applyTransform();
+  // bg
+  const sky = gctx.createLinearGradient(0,0,0,VH);
+  sky.addColorStop(0, '#0d122a'); sky.addColorStop(1, '#06081a');
+  gctx.fillStyle = sky; gctx.fillRect(0,0,VW,VH);
+  drawParallax(gctx);
+
+  if (G.screen === SCREEN.MAP){
+    renderMap();
+    return;
+  }
+  if (G.screen === SCREEN.TITLE) return;
+
+  const L = G.L; if (!L) return;
+  gctx.save();
+  gctx.translate(-L.camX, 0);
+  drawTheme(L);
+  drawPlatforms(L);
+  drawObstacles(L);
+  drawPrints(L);
+  drawClouds(L);
+  drawPowerups(L);
+  drawProjectiles(L);
+  drawFallers(L);
+  drawEnemies(L);
+  drawAlly(L);
+  drawBoss(L);
+  drawGoal(L);
+  drawPlayer(L);
+  gctx.restore();
+
+  if (L.boss && !L.boss.defeated){ drawBossHud(L) }
+}
+
+function drawParallax(g){
+  // far glow blobs (camera-aware in level mode)
+  const cam = (G.L ? G.L.camX : (G.screen===SCREEN.MAP ? 0 : 0)) * 0.2;
+  for (let i=0;i<10;i++){
+    const x = ((i*420) - (cam%420)) % (VW+420) - 210;
+    const y = 120 + (i%3)*180;
+    const r = 220;
+    const gr = g.createRadialGradient(x,y,0,x,y,r);
+    gr.addColorStop(0,'rgba(40,60,120,.35)');
+    gr.addColorStop(1,'rgba(40,60,120,0)');
+    g.fillStyle = gr;
+    g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.fill();
+  }
+  // grid
+  const camG = ((G.L ? G.L.camX : 0) * 0.5) % 60;
+  g.strokeStyle = 'rgba(255,255,255,0.03)'; g.lineWidth = 1;
+  for (let x = -camG; x < VW; x += 60){ g.beginPath(); g.moveTo(x,0); g.lineTo(x,VH); g.stroke(); }
+  for (let y = 0; y < VH; y += 60){ g.beginPath(); g.moveTo(0,y); g.lineTo(VW,y); g.stroke(); }
+}
+
+function drawTheme(L){
+  const th = L.cfg.theme || 'feed';
+  let tint='rgba(120,160,255,.05)';
+  if (th.startsWith('chat')) tint='rgba(120,220,180,.05)';
+  if (th.startsWith('forum') || th.startsWith('boss-forum')) tint='rgba(200,120,200,.05)';
+  if (th.startsWith('boss-feed')) tint='rgba(240,160,90,.05)';
+  if (th.startsWith('boss-chat')) tint='rgba(120,160,255,.05)';
+  gctx.fillStyle = tint;
+  gctx.fillRect(0, 0, L.width, VH);
+}
+
+function drawPlatforms(L){
+  for (const p of L.platforms){
+    if (p.kind === 'glitch'){
+      // glitch barrier
+      gctx.fillStyle='rgba(0,0,0,.3)'; gctx.fillRect(p.x+3, p.y+3, p.w, p.h);
+      const gr = gctx.createLinearGradient(0,p.y,0,p.y+p.h);
+      gr.addColorStop(0,'#3a0e3a'); gr.addColorStop(1,'#c93b8a');
+      gctx.fillStyle = gr; roundRect(gctx, p.x, p.y, p.w, p.h, 10); gctx.fill();
+      // glitch bars
+      const t = (L.glitchT*8)%p.h;
+      for (let i=0;i<8;i++){
+        const yy = ((i * (p.h/8) + t) % p.h);
+        gctx.fillStyle = 'rgba(255,255,255,'+(0.04 + (i%2)*0.08)+')';
+        gctx.fillRect(p.x, p.y + yy, p.w, 2);
+      }
+      gctx.strokeStyle='rgba(255,255,255,.25)'; gctx.lineWidth=1.5;
+      gctx.setLineDash([4,4]); roundRect(gctx, p.x, p.y, p.w, p.h, 10); gctx.stroke(); gctx.setLineDash([]);
+      // label
+      gctx.fillStyle='#ffb3d6'; gctx.font='bold 10px ui-monospace, monospace';
+      gctx.save(); gctx.translate(p.x+p.w/2, p.y+p.h/2); gctx.rotate(-Math.PI/2);
+      gctx.textAlign='center'; gctx.fillText('GLITCH', 0, 4); gctx.restore(); gctx.textAlign='left';
+      continue;
+    }
+    if (p.kind === 'unstable' && p.obs && p.obs.broken){ continue }
+    if (p.kind === 'unstable'){
+      const ox = (p.obs && p.obs.shake) ? Math.sin(L.glitchT*40) * 2 : 0;
+      gctx.fillStyle='rgba(0,0,0,.35)'; roundRect(gctx, p.x+3+ox, p.y+5, p.w, p.h, 6); gctx.fill();
+      const gr = gctx.createLinearGradient(0,p.y,0,p.y+p.h);
+      gr.addColorStop(0,'#f4c89a'); gr.addColorStop(1,'#c98f5a');
+      gctx.fillStyle=gr; roundRect(gctx, p.x+ox, p.y, p.w, p.h, 6); gctx.fill();
+      // dashed timer
+      gctx.strokeStyle='rgba(0,0,0,.3)'; gctx.setLineDash([4,3]); gctx.lineWidth=1;
+      gctx.strokeRect(p.x+3, p.y+3, p.w-6, p.h-6); gctx.setLineDash([]);
+      continue;
+    }
+    if (p.kind === 'ground'){
+      gctx.fillStyle='#0a0d1c'; gctx.fillRect(p.x, p.y+6, p.w, p.h);
+      const g = gctx.createLinearGradient(0,p.y,0,p.y+12);
+      g.addColorStop(0,'#f4ead6'); g.addColorStop(1,'#d6caa6');
+      gctx.fillStyle=g; roundRect(gctx, p.x, p.y, p.w, 14, 6); gctx.fill();
+      gctx.fillStyle='#1c213f'; roundRect(gctx, p.x, p.y+14, p.w, p.h-14, 4); gctx.fill();
+      gctx.fillStyle='rgba(255,255,255,.08)';
+      for (let i=0;i<3;i++) gctx.fillRect(p.x+18, p.y+30+i*12, Math.max(20, p.w*0.4 - i*30), 4);
+    } else {
+      // post platform (chat-bubble style)
+      gctx.fillStyle='rgba(0,0,0,.35)'; roundRect(gctx, p.x+3, p.y+5, p.w, p.h, 6); gctx.fill();
+      const g = gctx.createLinearGradient(0,p.y,0,p.y+p.h);
+      g.addColorStop(0,'#f4ead6'); g.addColorStop(1,'#cdc09c');
+      gctx.fillStyle=g; roundRect(gctx, p.x, p.y, p.w, p.h, 6); gctx.fill();
+      // tip
+      gctx.fillStyle='#cdc09c';
+      gctx.beginPath();
+      gctx.moveTo(p.x+18, p.y+p.h); gctx.lineTo(p.x+28, p.y+p.h+8); gctx.lineTo(p.x+34, p.y+p.h);
+      gctx.closePath(); gctx.fill();
+    }
+  }
+}
+
+function drawObstacles(L){
+  for (const o of L.obstacles){
+    if (o.type==='unstable' && o.broken){
+      // falling piece
+      const y = o.fallY || o.y;
+      const gr = gctx.createLinearGradient(0,y,0,y+18);
+      gr.addColorStop(0,'#f4c89a'); gr.addColorStop(1,'#c98f5a');
+      gctx.fillStyle=gr; roundRect(gctx, o.x, y, o.w, 18, 6); gctx.fill();
+    }
+    if (o.type==='silence'){
+      gctx.fillStyle='rgba(60,60,90,.18)';
+      gctx.fillRect(o.x, o.y, o.w, o.h);
+      gctx.strokeStyle='rgba(255,255,255,.15)'; gctx.setLineDash([8,6]);
+      gctx.strokeRect(o.x, o.y, o.w, o.h); gctx.setLineDash([]);
+      gctx.fillStyle='rgba(255,255,255,.5)'; gctx.font='bold 12px ui-monospace, monospace';
+      gctx.fillText('· ZONA DE SILÊNCIO ·', o.x+14, o.y+22);
+    }
+    if (o.type==='falling'){
+      // marker on top
+      gctx.fillStyle='rgba(255,93,108,.25)';
+      gctx.fillRect(o.x, 0, o.width, 8);
+    }
+    if (o.type==='mirror'){
+      gctx.fillStyle='rgba(120,220,255,.06)';
+      gctx.fillRect(o.x, 0, o.w, VH);
+      gctx.strokeStyle='rgba(120,220,255,.25)'; gctx.setLineDash([6,4]);
+      gctx.strokeRect(o.x, 60, o.w, VH-160); gctx.setLineDash([]);
+      gctx.fillStyle='rgba(120,220,255,.7)'; gctx.font='bold 12px ui-monospace, monospace';
+      gctx.fillText('· ESPELHO DE CYBERBULLYING — VEJA DO OUTRO LADO ·', o.x+14, 96);
+    }
+  }
+}
+
+function drawPrints(L){
+  for (const pr of L.prints){
+    if (pr.got) continue;
+    const cx = pr.x + pr.w/2, cy = pr.y + pr.h/2 + Math.sin((G.last/300)+pr.x)*4;
+    const g = gctx.createRadialGradient(cx,cy,0,cx,cy,40);
+    g.addColorStop(0,'rgba(240,160,90,.45)'); g.addColorStop(1,'rgba(240,160,90,0)');
+    gctx.fillStyle = g; gctx.beginPath(); gctx.arc(cx,cy,40,0,Math.PI*2); gctx.fill();
+    gctx.save(); gctx.translate(cx, cy); gctx.rotate(Math.sin((G.last/600)+pr.x)*.15);
+    const g2 = gctx.createLinearGradient(0,-10,0,10);
+    g2.addColorStop(0,'#fbd49a'); g2.addColorStop(1,'#f0a05a');
+    gctx.fillStyle=g2; roundRect(gctx,-12,-12,24,24,4); gctx.fill();
+    gctx.fillStyle='rgba(0,0,0,.35)';
+    gctx.fillRect(-7,-6, 14, 2); gctx.fillRect(-7,-1, 10, 2); gctx.fillRect(-7, 4, 12, 2);
+    gctx.restore();
+  }
+}
+
+function drawClouds(L){
+  for (const c of L.clouds){
+    if (c.solved){
+      const r = solvedRect(c);
+      const cg = gctx.createRadialGradient(r.x+r.w/2, r.y+r.h/2, 0, r.x+r.w/2, r.y+r.h/2, 110);
+      cg.addColorStop(0,'rgba(103,232,197,.35)'); cg.addColorStop(1,'rgba(103,232,197,0)');
+      gctx.fillStyle = cg; gctx.beginPath(); gctx.arc(r.x+r.w/2, r.y+r.h/2, 110, 0, Math.PI*2); gctx.fill();
+      const lg = gctx.createLinearGradient(0,r.y,0,r.y+r.h);
+      lg.addColorStop(0,'#9af2d3'); lg.addColorStop(1,'#67e8c5');
+      gctx.fillStyle = lg; roundRect(gctx, r.x, r.y, r.w, r.h, 8); gctx.fill();
+      gctx.fillStyle='#0a1a15'; gctx.font='11px ui-monospace, monospace'; gctx.textBaseline='middle';
+      gctx.fillText(`SOLIDÁRIA · ${String(c.id).padStart(2,'0')}`, r.x+10, r.y+r.h/2+1);
+      continue;
+    }
+    const x=c.x, y=c.y, w=c.w, h=c.h;
+    // halo
+    const cg = gctx.createRadialGradient(x+w/2, y+h/2, 0, x+w/2, y+h/2, 140);
+    cg.addColorStop(0,'rgba(201,59,138,.35)'); cg.addColorStop(1,'rgba(201,59,138,0)');
+    gctx.fillStyle = cg; gctx.beginPath(); gctx.arc(x+w/2,y+h/2,140,0,Math.PI*2); gctx.fill();
+    // body
+    gctx.save(); gctx.translate(x, y);
+    const t = L.glitchT*4 + c.glitch*10;
+    const wob = Math.sin(t)*3;
+    const grad = gctx.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0,'#c93b8a'); grad.addColorStop(1,'#3a0e3a');
+    gctx.fillStyle = grad; roundRect(gctx, wob*0.4, 0, w, h, 18); gctx.fill();
+    for (let i=0;i<6;i++){
+      const yy = (i*(h/6) + (t*9)%h) % h;
+      gctx.fillStyle='rgba(255,255,255,'+(.04+(i%2)*.06)+')';
+      gctx.fillRect(0, yy, w, 2);
+    }
+    gctx.strokeStyle='rgba(255,255,255,.18)'; gctx.setLineDash([6,4]); gctx.lineWidth=1.2;
+    roundRect(gctx, 0,0,w,h,18); gctx.stroke(); gctx.setLineDash([]);
+    gctx.fillStyle='rgba(255,255,255,.85)'; gctx.font='bold 11px ui-monospace, monospace'; gctx.textBaseline='top';
+    gctx.fillText(`!! NUVEM ${String(c.id).padStart(2,'0')}`, 10, 10);
+    gctx.fillStyle='rgba(0,0,0,.5)';
+    gctx.fillRect(w/2-20, h/2-4, 8, 6); gctx.fillRect(w/2+12, h/2-4, 8, 6);
+    gctx.beginPath();
+    gctx.moveTo(w/2-16, h/2+22);
+    for (let i=0;i<6;i++) gctx.lineTo(w/2-16 + i*7, h/2+18 + (i%2)*6);
+    gctx.lineTo(w/2+22, h/2+22); gctx.fill();
+    gctx.restore();
+    // proximity "!"
+    if (L.nearCloud === c){
+      const bx = x+w/2, by = y-22;
+      gctx.fillStyle='#f0a05a'; roundRect(gctx, bx-12, by-16, 24, 28, 6); gctx.fill();
+      gctx.fillStyle='#1a1224'; gctx.font='bold 18px ui-sans-serif, system-ui, sans-serif'; gctx.textAlign='center';
+      gctx.fillText('!', bx+1, by+4); gctx.textAlign='left';
+    }
+  }
+}
+
+function drawPowerups(L){
+  for (const pu of L.powerups){ if (!pu.taken) drawPowerup(gctx, pu, G.last) }
+}
+function drawProjectiles(L){
+  for (const pr of L.projectiles){
+    // notification icon — small magenta dot with glitch
+    gctx.fillStyle='rgba(201,59,138,.4)'; gctx.beginPath(); gctx.arc(pr.x, pr.y, 14, 0, Math.PI*2); gctx.fill();
+    gctx.fillStyle='#c93b8a'; gctx.beginPath(); gctx.arc(pr.x, pr.y, 7, 0, Math.PI*2); gctx.fill();
+    gctx.fillStyle='#0a1a15'; gctx.font='bold 9px ui-monospace, monospace'; gctx.textAlign='center';
+    gctx.fillText('!', pr.x, pr.y+3); gctx.textAlign='left';
+  }
+}
+function drawFallers(L){
+  for (const f of L.fallers){
+    gctx.fillStyle='rgba(0,0,0,.3)'; roundRect(gctx, f.x+2, f.y+2, f.w, f.h, 4); gctx.fill();
+    gctx.fillStyle='#1d2350'; roundRect(gctx, f.x, f.y, f.w, f.h, 4); gctx.fill();
+    gctx.fillStyle='rgba(255,255,255,.5)';
+    gctx.fillRect(f.x+4, f.y+8, 14, 2); gctx.fillRect(f.x+4, f.y+14, 22, 2); gctx.fillRect(f.x+4, f.y+20, 18, 2);
+  }
+}
+function drawEnemies(L){
+  for (const e of L.enemies){
+    if (e.invisibleUntil==='print' && !e.revealed){
+      // ghost outline
+      gctx.save(); gctx.globalAlpha=.15;
+      gctx.strokeStyle='#c93b8a'; gctx.setLineDash([4,4]);
+      gctx.strokeRect(e.x, e.y, e.w, e.h);
+      gctx.setLineDash([]); gctx.restore();
+      continue;
+    }
+    drawEnemy(gctx, e, G.last);
+  }
+}
+function drawAlly(L){
+  if (!L.ally) return;
+  const a = L.ally;
+  gctx.fillStyle='rgba(240,160,90,.4)';
+  gctx.beginPath(); gctx.arc(a.x+18, a.y+28, 30, 0, Math.PI*2); gctx.fill();
+  gctx.fillStyle='#f0a05a'; roundRect(gctx, a.x+6, a.y+8, 24, 30, 8); gctx.fill();
+  gctx.fillStyle='#1a1224';
+  gctx.fillRect(a.x+12, a.y+16, 3,3); gctx.fillRect(a.x+21, a.y+16, 3,3);
+  gctx.fillRect(a.x+14, a.y+24, 8, 2);
+  // label
+  gctx.fillStyle='#fbd49a'; gctx.font='bold 9px ui-monospace, monospace';
+  gctx.fillText('ALIADO', a.x-2, a.y);
+}
+function drawBoss(L){
+  const b = L.boss; if (!b || b.defeated) return;
+  // big platform-style boss
+  gctx.save(); gctx.translate(b.x, b.y);
+  // shadow body
+  gctx.fillStyle='rgba(0,0,0,.4)'; roundRect(gctx, 4, 8, b.w, b.h, 24); gctx.fill();
+  // body
+  const tint = b.kind==='fake' ? '#67e8c5' : (b.kind==='admin' ? '#1d2350' : '#3a0e3a');
+  gctx.fillStyle = tint;
+  roundRect(gctx, 0, 0, b.w, b.h, 24); gctx.fill();
+  // glitch overlay
+  for (let i=0;i<10;i++){
+    const yy = (i*(b.h/10) + (L.glitchT*30)%b.h) % b.h;
+    gctx.fillStyle='rgba(255,255,255,'+(.04+(i%2)*.07)+')';
+    gctx.fillRect(0, yy, b.w, 3);
+  }
+  // mouth/eyes
+  gctx.fillStyle='rgba(0,0,0,.5)';
+  gctx.fillRect(40, 60, 30, 16); gctx.fillRect(110, 60, 30, 16);
+  gctx.beginPath();
+  gctx.moveTo(40, 140);
+  for (let i=0;i<10;i++) gctx.lineTo(40 + i*10, 130 + (i%2)*16);
+  gctx.lineTo(140, 140); gctx.fill();
+  // label
+  gctx.fillStyle='#ffb3d6'; gctx.font='bold 12px ui-monospace, monospace';
+  gctx.fillText(b.name.toUpperCase(), 10, -10);
+  gctx.restore();
+}
+function drawBossHud(L){
+  const b = L.boss;
+  // top-center HP bar (in screen space)
+  applyTransform(); // already applied for level rendering; we're back in screen space
+  // Actually after level rendering we restored ctx but transform is still scaled
+  const w = 360, h = 8;
+  const x = (VW - w)/2, y = 110;
+  gctx.fillStyle='rgba(10,13,28,.7)'; roundRect(gctx, x-8, y-18, w+16, h+28, 12); gctx.fill();
+  gctx.fillStyle='rgba(255,255,255,.7)'; gctx.font='10px ui-monospace, monospace'; gctx.textAlign='center';
+  gctx.fillText(`CHEFÃO · ${b.name.toUpperCase()} · FASE ${b.phase}/3`, x+w/2, y-4);
+  gctx.fillStyle='#1a1f3a'; roundRect(gctx, x, y, w, h, 4); gctx.fill();
+  const pct = clamp((L.cfg.objectives.prints? (L.printsGot/L.cfg.objectives.prints) : 0), 0, 1);
+  // Show phase progress
+  let pr = 0;
+  if (b.phase===1) pr = clamp(L.time/8, 0, 1) * .33;
+  else if (b.phase===2) pr = .33 + pct * .33;
+  else pr = .66 + (b.defeated?.34:0);
+  gctx.fillStyle='#c93b8a'; roundRect(gctx, x, y, w*pr, h, 4); gctx.fill();
+  gctx.textAlign='left';
+}
+function drawGoal(L){
+  const g = L.goal;
+  const cg = gctx.createRadialGradient(g.x+g.w/2, g.y+g.h/2, 0, g.x+g.w/2, g.y+g.h/2, 200);
+  cg.addColorStop(0,'rgba(103,232,197,.35)'); cg.addColorStop(1,'rgba(103,232,197,0)');
+  gctx.fillStyle = cg; gctx.beginPath(); gctx.arc(g.x+g.w/2, g.y+g.h/2, 200, 0, Math.PI*2); gctx.fill();
+  const grd = gctx.createLinearGradient(0,g.y,0,g.y+g.h);
+  grd.addColorStop(0,'#9af2d3'); grd.addColorStop(1,'#67e8c5');
+  gctx.fillStyle = grd; roundRect(gctx, g.x, g.y, g.w, g.h, 30); gctx.fill();
+  gctx.fillStyle='rgba(10,30,25,.5)'; roundRect(gctx, g.x+8, g.y+12, g.w-16, g.h-24, 22); gctx.fill();
+  gctx.fillStyle='#9af2d3'; gctx.font='bold 11px ui-monospace, monospace';
+  gctx.save(); gctx.translate(g.x+g.w/2, g.y+g.h/2); gctx.rotate(-Math.PI/2);
+  gctx.textAlign='center'; gctx.fillText('SAÍDA · AMBIENTE LIMPO', 0, 4); gctx.restore(); gctx.textAlign='left';
+}
+function drawPlayer(L){
+  const p = L.player;
+  gctx.save(); gctx.translate(p.x+p.w/2, p.y+p.h);
+  gctx.fillStyle='rgba(0,0,0,.35)'; gctx.beginPath(); gctx.ellipse(0,2,18,5,0,0,Math.PI*2); gctx.fill();
+  const flash = p.hitFlash>0;
+  gctx.translate(0, -p.h);
+  const leg = Math.sin(p.runT)*6;
+  gctx.fillStyle='#283063';
+  gctx.fillRect(-12, p.h-18, 8, 16 + (p.onGround?leg:0));
+  gctx.fillRect(  4, p.h-18, 8, 16 - (p.onGround?leg:0));
+  gctx.fillStyle = flash ? '#ff5d6c' : (L.shielded ? '#9af2d3' : '#9af2d3');
+  roundRect(gctx, -14, 16, 28, 26, 6); gctx.fill();
+  if (L.shielded){
+    gctx.strokeStyle='rgba(246,198,74,.85)'; gctx.lineWidth=2;
+    gctx.beginPath(); gctx.arc(0, 28, 24, 0, Math.PI*2); gctx.stroke();
+  }
+  gctx.fillStyle='rgba(0,0,0,.25)'; gctx.fillRect(-14, 38, 28, 3);
+  gctx.fillStyle = flash ? '#ffc7cb' : '#f4ead6';
+  roundRect(gctx, -12, -2, 24, 22, 8); gctx.fill();
+  gctx.fillStyle='#1a1224';
+  const eyeOff = p.facing>0 ? 1 : -1;
+  gctx.fillRect(-6+eyeOff*2, 8, 3, 3);
+  gctx.fillRect( 3+eyeOff*2, 8, 3, 3);
+  gctx.fillStyle='#283063'; roundRect(gctx, -13, -4, 26, 8, 4); gctx.fill();
+  gctx.restore();
+}
+
+/* ====================== MAP ============================ */
+const MAP_NODES = [];
+(function buildMapNodes(){
+  // arrange: world 1 left, world 2 middle, world 3 right; each has 4 nodes in a curved row
+  const rows = [
+    { worldIdx:0, y:300 },
+    { worldIdx:1, y:520 },
+    { worldIdx:2, y:300 },
+  ];
+  WORLDS.forEach((w, wi) => {
+    const baseY = rows[wi].y;
+    w.levels.forEach((id, li) => {
+      const x = 220 + wi*420 + li * (wi%2===0? 90:-90)*0 + li*90;  // simple stair
+      // make a curved layout: x stepping
+      const stepX = 90;
+      const offsetX = wi*430;
+      const xx = 200 + offsetX + li*stepX;
+      const yy = baseY + Math.sin(li*1.2 + wi)*30 + (li===3? -40 : 0);
+      MAP_NODES.push({ id, x: xx, y: yy, world: w.id, isBoss: id.endsWith('-B'), label: LEVEL_BY_ID[id].name });
+    });
+  });
+})();
+
+function updateMap(dt){
+  const m = G.map;
+  // walk to target
+  if (m.walking && m.walkTo){
+    const dx = m.walkTo.x - m.avatarX;
+    const dy = m.walkTo.y - m.avatarY;
+    const d = Math.hypot(dx, dy);
+    const speed = 260 * dt;
+    if (d < speed){
+      m.avatarX = m.walkTo.x;
+      m.avatarY = m.walkTo.y;
+      m.walking = false; m.walkTo = null;
+      m.currentNodeId = m.targetNodeId;
+      showNodePanel(m.currentNodeId);
+    } else {
+      m.avatarX += dx/d * speed;
+      m.avatarY += dy/d * speed;
+    }
+  } else {
+    // discrete keyboard nav: ←/→ moves to adjacent node in linear sequence
+    // (simpler than free-roam)
+  }
+}
+
+function renderMap(){
+  // paths between nodes (within world sequence)
+  WORLDS.forEach(w=>{
+    const nodes = w.levels.map(id => MAP_NODES.find(n=>n.id===id));
+    for (let i=0;i<nodes.length-1;i++){
+      const a = nodes[i], b = nodes[i+1];
+      const unlocked = isUnlocked(b.id) || isComplete(a.id);
+      gctx.strokeStyle = unlocked ? 'rgba(154,242,211,.6)' : 'rgba(255,255,255,.12)';
+      gctx.setLineDash(unlocked ? [] : [6,8]);
+      gctx.lineWidth = 4;
+      // bezier
+      gctx.beginPath();
+      gctx.moveTo(a.x, a.y);
+      const mx = (a.x+b.x)/2, my = (a.y+b.y)/2 + 60;
+      gctx.quadraticCurveTo(mx, my, b.x, b.y);
+      gctx.stroke();
+      gctx.setLineDash([]);
+    }
+  });
+  // nodes
+  MAP_NODES.forEach(n=>{
+    drawMapNode(n);
+  });
+  // labels for world boundaries
+  WORLDS.forEach((w,i)=>{
+    const x = 200 + i*430 + 130;
+    gctx.fillStyle='rgba(255,255,255,.6)';
+    gctx.font='bold 12px ui-monospace, monospace';
+    gctx.fillText(`MUNDO ${w.id} · ${w.short}`, x-50, 160);
+    gctx.fillStyle='rgba(255,255,255,.4)';
+    gctx.font='11px ui-monospace, monospace';
+    gctx.fillText(w.name.toUpperCase(), x-60, 178);
+  });
+  // current node halo
+  const cur = MAP_NODES.find(n=>n.id===G.map.currentNodeId);
+  if (cur){
+    gctx.strokeStyle='rgba(154,242,211,.4)'; gctx.lineWidth=2;
+    gctx.beginPath(); gctx.arc(cur.x, cur.y, 40, 0, Math.PI*2); gctx.stroke();
+  }
+  // avatar
+  drawMapAvatar(G.map.avatarX, G.map.avatarY);
+}
+function drawMapNode(n){
+  const cfg = LEVEL_BY_ID[n.id];
+  const unlocked = isUnlocked(n.id);
+  const completed = isComplete(n.id);
+  const r = n.isBoss ? 32 : 24;
+  // halo
+  const gr = gctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r+30);
+  gr.addColorStop(0, completed ? 'rgba(154,242,211,.35)' : (unlocked ? 'rgba(240,160,90,.25)' : 'rgba(255,255,255,.05)'));
+  gr.addColorStop(1, 'rgba(0,0,0,0)');
+  gctx.fillStyle = gr; gctx.beginPath(); gctx.arc(n.x, n.y, r+30, 0, Math.PI*2); gctx.fill();
+  // base circle
+  gctx.fillStyle = completed ? '#67e8c5' : (unlocked ? '#f4ead6' : '#1a1f3a');
+  gctx.beginPath(); gctx.arc(n.x, n.y, r, 0, Math.PI*2); gctx.fill();
+  gctx.strokeStyle = n.isBoss ? '#ff5d6c' : 'rgba(0,0,0,.3)';
+  gctx.lineWidth = n.isBoss ? 3 : 1.5;
+  gctx.beginPath(); gctx.arc(n.x, n.y, r, 0, Math.PI*2); gctx.stroke();
+  // icon
+  gctx.fillStyle = completed ? '#0a1a15' : (unlocked ? '#1a1224' : '#3a4280');
+  gctx.font = 'bold 14px ui-monospace, monospace'; gctx.textAlign='center';
+  const ic = n.isBoss ? '☣' : (cfg.world===1?'#':(cfg.world===2?'@':'§'));
+  gctx.fillText(ic, n.x, n.y+5);
+  // label below
+  gctx.fillStyle = unlocked ? 'rgba(255,255,255,.85)' : 'rgba(255,255,255,.35)';
+  gctx.font = '12px ui-sans-serif, system-ui, sans-serif';
+  gctx.fillText(n.label, n.x, n.y + r + 18);
+  // medal indicator
+  const medals = medalsFor(n.id);
+  if (medals){
+    const colors = ['', '#c98f5a', '#cfd5e6', '#f6c64a'];
+    gctx.fillStyle = colors[medals];
+    gctx.beginPath(); gctx.arc(n.x + r-4, n.y - r + 4, 6, 0, Math.PI*2); gctx.fill();
+  }
+  gctx.textAlign='left';
+}
+function drawMapAvatar(x, y){
+  gctx.fillStyle='rgba(0,0,0,.35)'; gctx.beginPath(); gctx.ellipse(x, y+18, 14, 4, 0,0,Math.PI*2); gctx.fill();
+  gctx.fillStyle='#9af2d3'; roundRect(gctx, x-10, y-8, 20, 22, 6); gctx.fill();
+  gctx.fillStyle='#f4ead6'; roundRect(gctx, x-9, y-22, 18, 16, 6); gctx.fill();
+  gctx.fillStyle='#1a1224';
+  gctx.fillRect(x-5, y-15, 3, 3); gctx.fillRect(x+2, y-15, 3, 3);
+}
+
+/* ====================== SCREEN MANAGEMENT ============== */
+function hideAllOverlays(){
+  ['titleScreen','mapScreen','introScreen','puzzleScreen','resultScreen','overScreen','victoryScreen','archiveScreen','howScreen','aboutScreen']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('show') });
+}
+function showScreen(s){
+  hideAllOverlays();
+  G.screen = s;
+  if (s === SCREEN.TITLE){ $('#titleScreen').classList.add('show'); AUDIO.setStatic(0) }
+  else if (s === SCREEN.MAP){ $('#mapScreen').classList.add('show'); renderMapInit(); AUDIO.setStatic(0) }
+  else if (s === SCREEN.INTRO){ $('#introScreen').classList.add('show') }
+  else if (s === SCREEN.RESULT){ $('#resultScreen').classList.add('show') }
+  else if (s === SCREEN.OVER){ $('#overScreen').classList.add('show'); AUDIO.setStatic(0) }
+  else if (s === SCREEN.WIN){ $('#victoryScreen').classList.add('show'); AUDIO.setStatic(0); AUDIO.victory() }
+  else if (s === SCREEN.ARCHIVE){ $('#archiveScreen').classList.add('show'); renderArchive() }
+  else if (s === SCREEN.HOW){ $('#howScreen').classList.add('show') }
+  else if (s === SCREEN.ABOUT){ $('#aboutScreen').classList.add('show') }
+}
+
+/* ====================== MAP UI ========================= */
+function renderMapInit(){
+  // refresh totals/medals
+  $('#mapTotalPrints').textContent = String(SAVE.totalPrints);
+  let g=0,s=0,b=0;
+  Object.values(SAVE.completed).forEach(c=>{
+    if (c.medals>=3) g++;
+    else if (c.medals===2) s++;
+    else if (c.medals>=1) b++;
+  });
+  $('#mapGolds').textContent = g;
+  $('#mapSilvers').textContent = s;
+  $('#mapBronzes').textContent = b;
+
+  // position avatar near current node
+  const cur = MAP_NODES.find(n=>n.id===G.map.currentNodeId);
+  if (cur){
+    G.map.avatarX = cur.x - 50; G.map.avatarY = cur.y;
+  }
+  showNodePanel(G.map.currentNodeId);
+}
+function showNodePanel(id){
+  const node = MAP_NODES.find(n=>n.id===id);
+  if (!node) return;
+  const cfg = LEVEL_BY_ID[id];
+  const panel = $('#mapNodePanel');
+  panel.classList.add('show');
+  $('#pnLbl').textContent = `MUNDO ${cfg.world} · ${cfg.isBoss?'CHEFÃO':'FASE'} ${cfg.id.split('-')[1]}`;
+  $('#pnTitle').textContent = cfg.name;
+  $('#pnDesc').textContent = cfg.desc;
+  const o = cfg.objectives;
+  const objs = [
+    `<div class="row"><div class="b">1</div>Chegar ao fim da fase</div>`,
+    `<div class="row"><div class="b">2</div>Resolver ${o.puzzles} puzzle(s)</div>`,
+    `<div class="row"><div class="b">3</div>Coletar ${o.prints} Print(s) (medalha de ouro)</div>`,
+    o.dontLoseRes ? `<div class="row"><div class="b">★</div>Não esgotar a Resiliência (prata)</div>` : null,
+    o.timeLimit ? `<div class="row"><div class="b">⏱</div>Tempo: ${o.timeLimit}s</div>` : null,
+  ].filter(Boolean).join('');
+  $('#pnObj').innerHTML = objs;
+  // medal chip
+  const m = medalsFor(id);
+  const mChip = $('#pnMedal');
+  if (m){
+    const name = m===3?'OURO':(m===2?'PRATA':'BRONZE');
+    const cls = m===3?'m-g':(m===2?'m-s':'m-b');
+    mChip.innerHTML = `<span class="medal-dot ${cls}"></span><span>${name}</span>`;
+  } else if (isUnlocked(id)) {
+    mChip.innerHTML = `<span class="medal-dot m-x"></span><span>Não jogada</span>`;
+  } else {
+    mChip.innerHTML = `<span class="medal-dot m-x"></span><span>Bloqueada</span>`;
+  }
+  // start button enabled?
+  $('#pnStart').disabled = !isUnlocked(id);
+  $('#pnStart').textContent = isComplete(id) ? 'Rejogar' : (isUnlocked(id) ? 'Começar' : 'Bloqueada');
+  $('#pnStart').dataset.id = id;
+}
+$('#pnClose').addEventListener('click', ()=> $('#mapNodePanel').classList.remove('show'));
+$('#pnStart').addEventListener('click', e => {
+  const id = e.currentTarget.dataset.id;
+  if (!isUnlocked(id)) return;
+  startLevel(id);
+});
+
+/* Map keyboard nav: ←/→ move to prev/next node in linear sequence, E to interact */
+function mapMove(dir){
+  // current index in linear LEVELS array
+  const idx = LEVELS.findIndex(l=>l.id===G.map.currentNodeId);
+  const ni = clamp(idx + dir, 0, LEVELS.length-1);
+  const nextId = LEVELS[ni].id;
+  if (!isUnlocked(nextId)){ toast('Fase bloqueada', 'bad'); return }
+  G.map.targetNodeId = nextId;
+  const node = MAP_NODES.find(n=>n.id===nextId);
+  if (!node) return;
+  G.map.walkTo = {x: node.x - 50, y: node.y};
+  G.map.walking = true;
+  $('#mapNodePanel').classList.remove('show');
+}
+
+/* ====================== ARCHIVE ======================== */
+function renderArchive(){
+  const grid = $('#archiveGrid');
+  grid.innerHTML = '';
+  ARCHIVE.forEach(a=>{
+    const seen = SAVE.archiveSeen.has(a.id);
+    const card = document.createElement('div');
+    card.className = 'print-card' + (seen? '' : ' locked');
+    card.innerHTML = `<div class="pn">${a.tag}</div>
+      <div class="pt">${a.title}</div>
+      <div class="pd">${seen ? a.body : 'Colete o Print correspondente nas fases para revelar este conteúdo.'}</div>`;
+    grid.appendChild(card);
+  });
+}
+
+/* ====================== RESULTS / END LEVEL ============ */
+function finishLevel(){
+  if (G.screen !== SCREEN.PLAY) return;
+  const L = G.L; const cfg = L.cfg;
+  // require at least objective puzzles (otherwise refuse goal)
+  if (L.puzzlesSolved < cfg.objectives.puzzles){
+    toast(`Resolva pelo menos ${cfg.objectives.puzzles} puzzle(s)`, 'bad');
+    // push player back from goal
+    L.player.x = Math.max(0, L.player.x - 80);
+    return;
+  }
+  // for boss, require boss defeated
+  if (cfg.isBoss && L.boss && !L.boss.defeated){
+    toast('Encerre o chefão pelo Painel de Denúncia', 'bad');
+    L.player.x = Math.max(0, L.player.x - 80);
+    return;
+  }
+  // medals
+  let medals = 1; // bronze
+  if (cfg.objectives.dontLoseRes ? (L.res > 0 && L.res >= 1) : true) medals = Math.max(medals, 1);
+  if (L.res >= 50 || !cfg.objectives.dontLoseRes) medals = Math.max(medals, 2); // silver baseline
+  if (L.printsGot >= cfg.objectives.prints) medals = 3; // gold
+  // clamp prata: requires not losing res too low
+  if (cfg.objectives.dontLoseRes && L.res < 50) medals = Math.min(medals, 1);
+  // gold requires both
+  if (medals === 3){
+    if (cfg.objectives.dontLoseRes && L.res < 50) medals = 2;
+  }
+  // save
+  SAVE.completed[cfg.id] = {
+    medals,
+    prints: L.printsGot,
+    bestRes: Math.max(L.res, (SAVE.completed[cfg.id]?.bestRes||0)),
+  };
+  onLevelCompleted(cfg.id);
+
+  // result screen
+  $('#resTag').textContent = cfg.isBoss ? `${cfg.name.toUpperCase()} · SILENCIADO PELA DENÚNCIA` : 'FASE CONCLUÍDA';
+  $('#resTitle').textContent = cfg.isBoss ? 'Denúncia formal aceita.' : 'Plataforma Solidária construída.';
+  $('#resDesc').textContent = cfg.isBoss
+    ? 'Você reuniu provas e provou que o sistema pode agir quando se aciona o canal certo.'
+    : 'Você restaurou esta parte do Espaço Digital.';
+  // medals
+  $('#medalB').classList.toggle('earned', medals>=1);
+  $('#medalS').classList.toggle('earned', medals>=2);
+  $('#medalG').classList.toggle('earned', medals>=3);
+  // objective checklist
+  const o = cfg.objectives;
+  const checks = [
+    {ok: L.puzzlesSolved >= o.puzzles, t:`Puzzles: ${L.puzzlesSolved} / ${o.puzzles}`},
+    {ok: L.printsGot >= o.prints, t:`Prints: ${L.printsGot} / ${o.prints}`},
+    {ok: !o.dontLoseRes || L.res >= 50, t:`Resiliência: ${Math.round(L.res)}%`},
+    o.timeLimit ? {ok: L.timeLeft > 0, t:`Tempo restante: ${Math.ceil(L.timeLeft)}s`} : null,
+  ].filter(Boolean);
+  $('#resObjCheck').innerHTML = checks.map(c=>`<div class="${c.ok?'ok':'no'}">${c.ok?'✓':'·'} ${c.t}</div>`).join('');
+
+  // Next/buttons
+  const nextIdx = LEVELS.findIndex(l=>l.id===cfg.id) + 1;
+  if (nextIdx < LEVELS.length && isUnlocked(LEVELS[nextIdx].id)){
+    $('#resNext').style.display='';
+    $('#resNext').dataset.next = LEVELS[nextIdx].id;
+  } else {
+    $('#resNext').style.display='none';
+  }
+  // if final boss complete, show final screen instead
+  if (cfg.id === '3-B'){
+    showScreen(SCREEN.WIN);
+    return;
+  }
+  showScreen(SCREEN.RESULT);
+}
+
+$('#resNext').addEventListener('click', e=>{
+  const next = e.currentTarget.dataset.next;
+  if (next) startLevel(next);
+});
+$('#resRetry').addEventListener('click', ()=>{
+  if (G.L) startLevel(G.L.cfg.id);
+});
+$('#resMap').addEventListener('click', ()=> showScreen(SCREEN.MAP));
+
+function gameOver(){
+  if (G.screen === SCREEN.OVER) return;
+  AUDIO.setStatic(0);
+  showScreen(SCREEN.OVER);
+}
+
+/* ====================== TITLE / NAV BINDINGS ============ */
+$('#btnPlay').addEventListener('click', ()=> showScreen(SCREEN.MAP));
+$('#btnHow').addEventListener('click', ()=> showScreen(SCREEN.HOW));
+$('#btnAbout').addEventListener('click', ()=> showScreen(SCREEN.ABOUT));
+$('#btnHowClose').addEventListener('click', ()=> showScreen(SCREEN.TITLE));
+$('#btnAboutClose').addEventListener('click', ()=> showScreen(SCREEN.TITLE));
+
+$('#btnArchive').addEventListener('click', ()=> showScreen(SCREEN.ARCHIVE));
+$('#btnArchiveBack').addEventListener('click', ()=> showScreen(SCREEN.MAP));
+$('#btnMapTitle').addEventListener('click', ()=> showScreen(SCREEN.TITLE));
+
+$('#introBack').addEventListener('click', ()=> showScreen(SCREEN.MAP));
+$('#introStart').addEventListener('click', actuallyStart);
+
+$('#btnRetry').addEventListener('click', ()=> { if (G.L) startLevel(G.L.cfg.id) });
+$('#btnOverMap').addEventListener('click', ()=> showScreen(SCREEN.MAP));
+
+$('#btnFinalMap').addEventListener('click', ()=> showScreen(SCREEN.MAP));
+$('#btnFinalArchive').addEventListener('click', ()=> showScreen(SCREEN.ARCHIVE));
+$('#btnFinalTitle').addEventListener('click', ()=> showScreen(SCREEN.TITLE));
+
+/* ====================== INPUT =========================== */
+const keymap = {
+  ArrowLeft:'left', ArrowRight:'right', ArrowUp:'jump',
+  KeyA:'left', KeyD:'right', KeyW:'jump', Space:'jump',
+  KeyE:'use', Enter:'use', KeyM:'mute', Escape:'esc'
+};
+window.addEventListener('keydown', e=>{
+  const a = keymap[e.code]; if (!a) return;
+  if (a === 'jump' || a === 'use') e.preventDefault();
+  if (a === 'mute'){ const m = AUDIO.toggleMute(); toast(m?'Som mudo':'Som ligado', 'good'); return; }
+  if (a === 'esc'){
+    if (G.screen === SCREEN.PLAY){ showScreen(SCREEN.MAP); AUDIO.setStatic(0); }
+    else if (G.screen === SCREEN.PUZZLE){ $('#puzzleScreen').classList.remove('show'); G.screen = SCREEN.PLAY; G.last = performance.now(); }
+    else if (G.screen === SCREEN.INTRO){ showScreen(SCREEN.MAP); }
+    else if (G.screen === SCREEN.HOW || G.screen === SCREEN.ABOUT){ showScreen(SCREEN.TITLE); }
+    else if (G.screen === SCREEN.ARCHIVE){ showScreen(SCREEN.MAP); }
+    else if (G.screen === SCREEN.RESULT){ showScreen(SCREEN.MAP); }
+    else if (G.screen === SCREEN.OVER){ showScreen(SCREEN.MAP); }
+    else if (G.screen === SCREEN.MAP){ showScreen(SCREEN.TITLE); }
+    return;
+  }
+  if (G.screen === SCREEN.PUZZLE) return;
+  if (G.screen === SCREEN.MAP){
+    if (a === 'left') mapMove(-1);
+    else if (a === 'right') mapMove(1);
+    else if (a === 'use'){
+      const id = G.map.currentNodeId;
+      if (isUnlocked(id)) startLevel(id);
+      else toast('Fase bloqueada','bad');
+    }
+    return;
+  }
+  if (a === 'use' && G.screen === SCREEN.PLAY){ tryInteract(); return; }
+  G.keys.add(a);
+  AUDIO.ensure();
+});
+window.addEventListener('keyup', e=>{
+  const a = keymap[e.code]; if (!a) return; G.keys.delete(a);
+});
+
+/* HUD: keep totals fresh in title/map */
+function refreshTopCounters(){
+  $('#totalPrints').textContent = String(SAVE.totalPrints);
+}
+refreshTopCounters();
+
+/* ====================== BOOT ============================ */
+requestAnimationFrame(loop);
+
+// global error guard: surface in toast for debugging
+window.addEventListener('error', e=>{
+  try { toast('Erro: ' + (e.message||'desconhecido'), 'bad') } catch(_) {}
+});
+})();
+</script>
+</body>
+</html>
+
